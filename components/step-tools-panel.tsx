@@ -1,0 +1,317 @@
+'use client'
+
+import { useState } from 'react'
+import type { QCCardType } from './qc-overview'
+
+type StepStatus = '未执行' | '执行中' | '已完成' | '存在异常' | '待复核' | '执行失败'
+type ToolStatus = '可用' | '运行中' | '已完成' | '需配置' | '执行失败'
+
+interface Tool {
+  name: string
+  status: ToolStatus
+}
+
+interface Step {
+  type: QCCardType
+  label: string
+  icon: string
+  status: StepStatus
+  progress: number
+  score?: number
+  anomalyCount: number
+  reviewCount: number
+  lastRun: string
+  tools: Tool[]
+}
+
+const STEPS: Step[] = [
+  {
+    type: 'consistency',
+    label: '一致性校验',
+    icon: 'rule',
+    status: '存在异常',
+    progress: 100,
+    score: 88,
+    anomalyCount: 12,
+    reviewCount: 8,
+    lastRun: '07-20 14:23',
+    tools: [
+      { name: '量纲与单位识别', status: '已完成' },
+      { name: '量级异常识别', status: '已完成' },
+      { name: '字段口径对比', status: '需配置' },
+      { name: '单位与量级转换计算器', status: '可用' },
+    ],
+  },
+  {
+    type: 'completeness',
+    label: '完整性校验',
+    icon: 'checklist',
+    status: '待复核',
+    progress: 100,
+    score: 91,
+    anomalyCount: 7,
+    reviewCount: 5,
+    lastRun: '07-20 14:35',
+    tools: [
+      { name: '缺失扫描', status: '已完成' },
+      { name: 'KNN', status: '已完成' },
+      { name: '样条插值', status: '已完成' },
+      { name: 'MICE 链式方程', status: '可用' },
+      { name: 'Random Forest', status: '可用' },
+      { name: 'OCR/NLP', status: '需配置' },
+      { name: '大模型抽取', status: '需配置' },
+    ],
+  },
+  {
+    type: 'distribution',
+    label: '分布范围校验',
+    icon: 'bar_chart',
+    status: '执行中',
+    progress: 72,
+    anomalyCount: 18,
+    reviewCount: 0,
+    lastRun: '07-22 09:11',
+    tools: [
+      { name: '3σ 准则', status: '已完成' },
+      { name: 'IQR', status: '已完成' },
+      { name: '箱线图', status: '已完成' },
+      { name: '孤立森林', status: '运行中' },
+      { name: '单类支持向量机', status: '可用' },
+      { name: '物理上下限', status: '需配置' },
+      { name: '公式计算', status: '可用' },
+    ],
+  },
+  {
+    type: 'correlation',
+    label: '相关性校验',
+    icon: 'scatter_plot',
+    status: '未执行',
+    progress: 0,
+    anomalyCount: 0,
+    reviewCount: 0,
+    lastRun: '—',
+    tools: [
+      { name: 'Pearson', status: '可用' },
+      { name: 'Spearman', status: '可用' },
+      { name: '线性回归', status: '可用' },
+      { name: '残差分析', status: '可用' },
+      { name: '相关矩阵', status: '可用' },
+    ],
+  },
+]
+
+const STATUS_STYLE: Record<StepStatus, { color: string; bg: string; icon: string }> = {
+  未执行: { color: '#546e7a', bg: '#eceff1', icon: 'radio_button_unchecked' },
+  执行中: { color: '#1565c0', bg: '#e3f2fd', icon: 'sync' },
+  已完成: { color: '#2e7d32', bg: '#e8f5e9', icon: 'check_circle' },
+  存在异常: { color: '#c62828', bg: '#ffebee', icon: 'error' },
+  待复核: { color: '#e65100', bg: '#fff3e0', icon: 'pending' },
+  执行失败: { color: '#b71c1c', bg: '#ffcdd2', icon: 'cancel' },
+}
+
+const TOOL_STATUS_STYLE: Record<ToolStatus, { color: string; dot: string }> = {
+  可用: { color: 'var(--md-sys-color-on-surface-variant)', dot: '#9e9e9e' },
+  运行中: { color: '#1565c0', dot: '#1565c0' },
+  已完成: { color: 'var(--app-color-success)', dot: '#2e7d32' },
+  需配置: { color: '#e65100', dot: '#e65100' },
+  执行失败: { color: 'var(--md-sys-color-error)', dot: '#c62828' },
+}
+
+interface StepToolsPanelProps {
+  activeStep?: QCCardType | null
+  onStepClick?: (type: QCCardType) => void
+  onCreateReport?: () => void
+  collapsed?: boolean
+  onToggleCollapse?: () => void
+}
+
+export function StepToolsPanel({ activeStep, onStepClick, onCreateReport, collapsed, onToggleCollapse }: StepToolsPanelProps) {
+  const [expandedStep, setExpandedStep] = useState<QCCardType | null>('consistency')
+
+  const handleStepClick = (type: QCCardType) => {
+    setExpandedStep(expandedStep === type ? null : type)
+    onStepClick?.(type)
+  }
+
+  const hasRunning = STEPS.some((s) => s.status === '执行中')
+  const allDone = STEPS.every((s) => s.status === '已完成' || s.status === '存在异常' || s.status === '待复核')
+
+  if (collapsed) {
+    return (
+      <aside className="panel-section step-tools-panel panel-section--collapsed" aria-label="质检步骤与工具（已收起）">
+        <div className="panel-collapsed-rail">
+          <md-icon-button aria-label="展开质检步骤" onClick={onToggleCollapse}>
+            <md-icon>chevron_left</md-icon>
+          </md-icon-button>
+          <div className="panel-collapsed-label">
+            <md-icon>rule</md-icon>
+            <span className="panel-collapsed-text">质检步骤</span>
+          </div>
+        </div>
+      </aside>
+    )
+  }
+
+  return (
+    <aside className="panel-section step-tools-panel" aria-label="质检步骤与工具">
+      <div className="panel-header">
+        <span className="md-typescale-label-large panel-title">质检步骤</span>
+        <md-icon-button aria-label="收起质检步骤" onClick={onToggleCollapse}>
+          <md-icon>chevron_right</md-icon>
+        </md-icon-button>
+      </div>
+
+      {/* 开始质检按钮区 */}
+      <div className="step-panel-action">
+        {hasRunning ? (
+          <md-filled-button class="step-start-btn" disabled aria-label="质检执行中">
+            <md-icon slot="icon">sync</md-icon>
+            质检执行中...
+          </md-filled-button>
+        ) : allDone ? (
+          <>
+            <md-outlined-button class="step-start-btn" aria-label="重新执行质检">
+              <md-icon slot="icon">replay</md-icon>
+              重新质检
+            </md-outlined-button>
+            <md-filled-button class="step-start-btn step-report-btn" aria-label="创建质控报告" onClick={() => onCreateReport?.()}>
+              <md-icon slot="icon">description</md-icon>
+              创建报告
+            </md-filled-button>
+          </>
+        ) : (
+          <md-filled-button class="step-start-btn" aria-label="开始质检">
+            <md-icon slot="icon">play_arrow</md-icon>
+            开始质检
+          </md-filled-button>
+        )}
+      </div>
+
+      <div className="step-tools-body">
+        {STEPS.map((step) => {
+          const ss = STATUS_STYLE[step.status]
+          const isActive = activeStep === step.type
+          const isExpanded = expandedStep === step.type
+
+          return (
+            <div
+              key={step.type}
+              className={`step-card${isActive ? ' step-card--active' : ''}`}
+            >
+              {/* 步骤头部 */}
+              <button
+                className="step-card-header"
+                aria-expanded={isExpanded}
+                aria-label={`${step.label}，${step.status}，点击${isExpanded ? '收起' : '展开'}工具`}
+                onClick={() => handleStepClick(step.type)}
+              >
+                <div className="step-card-left">
+                  <md-icon class="step-type-icon">{step.icon}</md-icon>
+                  <div className="step-card-info">
+                    <span className="md-typescale-label-medium step-name">{step.label}</span>
+                    <div className="step-meta-row">
+                      <span
+                        className="step-status-chip md-typescale-label-small"
+                        style={{ color: ss.color, background: ss.bg }}
+                      >
+                        <md-icon class="step-status-icon">{ss.icon}</md-icon>
+                        {step.status}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <div className="step-card-right">
+                  {step.score !== undefined ? (
+                    <span
+                      className="md-typescale-title-small step-score"
+                      style={{
+                        color:
+                          step.score >= 90
+                            ? 'var(--app-color-success)'
+                            : step.score >= 75
+                            ? 'var(--app-color-warning)'
+                            : 'var(--md-sys-color-error)',
+                      }}
+                    >
+                      {step.score}
+                    </span>
+                  ) : (
+                    <span className="md-typescale-label-small step-no-score">—</span>
+                  )}
+                  <md-icon class="step-expand-icon">{isExpanded ? 'expand_less' : 'expand_more'}</md-icon>
+                </div>
+              </button>
+
+              {/* 进度条 */}
+              {step.progress > 0 && step.progress < 100 && (
+                <div className="step-progress-wrap" aria-label={`执行进度 ${step.progress}%`}>
+                  <div className="step-progress-bar">
+                    <div
+                      className="step-progress-fill"
+                      style={{ width: `${step.progress}%` }}
+                    />
+                  </div>
+                  <span className="md-typescale-label-small step-progress-pct">{step.progress}%</span>
+                </div>
+              )}
+
+              {/* 步骤详情 */}
+              {isExpanded && (
+                <div className="step-detail">
+                  <div className="step-detail-row">
+                    <span className="md-typescale-label-small step-detail-label">异常记录</span>
+                    <span className="md-typescale-label-small step-detail-value" style={{ color: step.anomalyCount > 0 ? 'var(--md-sys-color-error)' : 'var(--md-sys-color-on-surface-variant)' }}>
+                      {step.anomalyCount} 条
+                    </span>
+                  </div>
+                  <div className="step-detail-row">
+                    <span className="md-typescale-label-small step-detail-label">待复核</span>
+                    <span className="md-typescale-label-small step-detail-value" style={{ color: step.reviewCount > 0 ? 'var(--app-color-warning)' : 'var(--md-sys-color-on-surface-variant)' }}>
+                      {step.reviewCount} 条
+                    </span>
+                  </div>
+                  <div className="step-detail-row">
+                    <span className="md-typescale-label-small step-detail-label">最近执行</span>
+                    <span className="md-typescale-label-small step-detail-value">{step.lastRun}</span>
+                  </div>
+
+                  {/* 工具清单 */}
+                  <div className="step-tools-list" aria-label={`${step.label}工具清单`}>
+                    <div className="md-typescale-label-small step-tools-title">可用工具</div>
+                    {step.tools.map((tool) => {
+                      const ts = TOOL_STATUS_STYLE[tool.status]
+                      return (
+                        <button
+                          key={tool.name}
+                          className="tool-item"
+                          aria-label={`${tool.name}，状态：${tool.status}`}
+                        >
+                          <span
+                            className="tool-dot"
+                            style={{ background: ts.dot }}
+                            aria-hidden="true"
+                          />
+                          <span
+                            className="md-typescale-label-small tool-name"
+                            style={{ color: ts.color }}
+                          >
+                            {tool.name}
+                          </span>
+                          <span className="md-typescale-label-small tool-status">
+                            {tool.status}
+                          </span>
+                        </button>
+                      )
+                    })}
+                  </div>
+
+
+                </div>
+              )}
+            </div>
+          )
+        })}
+      </div>
+    </aside>
+  )
+}

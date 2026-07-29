@@ -1,0 +1,132 @@
+/* Material Web typescale utility classes (.md-typescale-*) */
+@import '@material/web/typography/md-typescale-styles.css';
+
+/*
+ * Material 3 baseline color schemes.
+ * Token values are the M3 baseline scheme (source color #6750A4) from
+ * Material Theme Builder / m3.material.io. Light scheme on :root,
+ * dark scheme on .dark.
+ */
+:root {
+  color-scheme: light;
+
+  /* 企业蓝主题 - 长庆油气田数据质控平台 */
+  --md-sys-color-primary: #1565c0;
+  --md-sys-color-on-primary: #ffffff;
+  --md-sys-color-primary-container: #d1e4ff;
+  --md-sys-color-on-primary-container: #001d36;
+  --md-sys-color-secondary: #535f70;
+  --md-sys-color-on-secondary: #ffffff;
+  --md-sys-color-secondary-container: #d7e3f7;
+  --md-sys-color-on-secondary-container: #101c2b;
+  --md-sys-color-tertiary: #6b5778;
+  --md-sys-color-on-tertiary: #ffffff;
+  --md-sys-color-tertiary-container: #f3daff;
+  --md-sys-color-on-tertiary-container: #251431;
+  --md-sys-color-error: #ba1a1a;
+  --md-sys-color-on-error: #ffffff;
+  --md-sys-color-error-container: #ffdad6;
+  --md-sys-color-on-error-container: #410002;
+  --md-sys-color-background: #f4f6fa;
+  --md-sys-color-on-background: #1a1c1e;
+  --md-sys-color-surface: #f8f9ff;
+  --md-sys-color-on-surface: #1a1c1e;
+  --md-sys-color-surface-variant: #dfe2eb;
+  --md-sys-color-on-surface-variant: #43474e;
+  --md-sys-color-outline: #73777f;
+  --md-sys-color-outline-variant: #c3c7cf;
+  --md-sys-color-shadow: #000000;
+  --md-sys-color-scrim: #000000;
+  --md-sys-color-inverse-surface: #2f3033;
+  --md-sys-color-inverse-on-surface: #f1f0f4;
+  --md-sys-color-inverse-primary: #9ecaff;
+  --md-sys-color-surface-dim: #d9d9e0;
+  --md-sys-color-surface-bright: #f8f9ff;
+  --md-sys-color-surface-container-lowest: #ffffff;
+  --md-sys-color-surface-container-low: #f3f3fa;
+  --md-sys-color-surface-container: #edeef5;
+  --md-sys-color-surface-container-high: #e7e8ef;
+  --md-sys-color-surface-container-highest: #e2e2e9;
+
+  /* 业务语义色 */
+  --app-color-brand-bar: #0d47a1;
+  --app-color-success: #2e7d32;
+  --app-color-warning: #e65100;
+  --app-color-score-high: #1b5e20;
+  --app-color-score-mid: #e65100;
+  --app-color-score-low: #b71c1c;
+
+  /* Typefaces: applied to every system and component token */
+  --md-ref-typeface-brand: var(--font-roboto), Roboto, system-ui, sans-serif;
+  --md-ref-typeface-plain: var(--font-roboto), Roboto, system-ui, sans-serif;
+}
+
+.dark {
+  color-scheme: dark;
+
+  --md-sys-color-primary: #9ecaff;
+  --md-sys-color-on-primary: #003258;
+  --md-sys-color-primary-container: #004880;
+  --md-sys-color-on-primary-container: #d1e4ff;
+  --md-sys-color-secondary: #bbc8db;
+  --md-sys-color-on-secondary: #253140;
+  --md-sys-color-secondary-container: #3b4858;
+  --md-sys-color-on-secondary-container: #d7e3f7;
+  --md-sys-color-tertiary: #d7bee4;
+  --md-sys-color-on-tertiary: #3b2948;
+  --md-sys-color-tertiary-container: #523f5f;
+  --md-sys-color-on-tertiary-container: #f3daff;
+  --md-sys-color-error: #ffb4ab;
+  --md-sys-color-on-error: #690005;
+  --md-sys-color-error-container: #93000a;
+  --md-sys-color-on-error-container: #ffdad6;
+  --md-sys-color-background: #111318;
+  --md-sys-color-on-background: #e2e2e9;
+  --md-sys-color-surface: #111318;
+  --md-sys-color-on-surface: #e2e2e9;
+  --md-sys-color-surface-variant: #43474e;
+  --md-sys-color-on-surface-variant: #c3c7cf;
+  --md-sys-color-outline: #8d9199;
+  --md-sys-color-outline-variant: #43474e;
+  --md-sys-color-shadow: #000000;
+  --md-sys-color-scrim: #000000;
+  --md-sys-color-inverse-surface: #e2e2e9;
+  --md-sys-color-inverse-on-surface: #2f3033;
+  --md-sys-color-inverse-primary: #1565c0;
+  --md-sys-color-surface-dim: #111318;
+  --md-sys-color-surface-bright: #37393e;
+  --md-sys-color-surface-container-lowest: #0c0e13;
+  --md-sys-color-surface-container-low: #1a1c1e;
+  --md-sys-color-surface-container: #1e2022;
+  --md-sys-color-surface-container-high: #282a2d;
+  --md-sys-color-surface-container-highest: #333538;
+
+  --app-color-brand-bar: #0d47a1;
+  --app-color-success: #66bb6a;
+  --app-color-warning: #ffa726;
+  --app-color-score-high: #66bb6a;
+  --app-color-score-mid: #ffa726;
+  --app-color-score-low: #ef5350;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--md-sys-color-background);
+  color: var(--md-sys-color-on-background);
+  font-family: var(--md-ref-typeface-plain);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Material Symbols icon font for <md-icon> */
+md-icon {
+  font-family: 'Material Symbols Outlined';
+}
