@@ -1,20 +1,182 @@
 'use client'
 
+import type { ReactNode } from 'react'
 import { RadarChart } from './radar-chart'
+import { MOCK_DATASETS } from './dataset-list'
 
 export type QCCardType = 'consistency' | 'completeness' | 'distribution' | 'correlation'
 
 interface QCOverviewProps {
   onCardClick: (type: QCCardType) => void
   hoveredCard?: QCCardType | null
+  datasetId?: string
 }
 
-const RADAR_DATA = [
-  { label: '一致性', score: 88, anomalyCount: 12, reviewedCount: 8 },
-  { label: '相关性', score: 79, anomalyCount: 23, reviewedCount: 15 },
-  { label: '完整性', score: 91, anomalyCount: 7, reviewedCount: 7 },
-  { label: '分布范围', score: 83, anomalyCount: 18, reviewedCount: 10 },
-]
+type RadarDim = { label: string; score: number; anomalyCount: number; reviewedCount: number }
+type StatItem = { icon: string; label: string; value: string; highlight?: boolean }
+type CardData = { score: number; metrics: { label: string; value: string | number; color: string }[] }
+
+interface DatasetContent {
+  radar: RadarDim[]
+  stats: StatItem[]
+  cards: Record<QCCardType, CardData>
+}
+
+// 各数据集对应的质检内容（按数据集 ID 映射）
+const DATASET_CONTENT: Record<string, DatasetContent> = {
+  // 苏里格区块2024年综合数据集
+  '1': {
+    radar: [
+      { label: '一致性', score: 88, anomalyCount: 12, reviewedCount: 8 },
+      { label: '相关性', score: 79, anomalyCount: 23, reviewedCount: 15 },
+      { label: '完整性', score: 91, anomalyCount: 7, reviewedCount: 7 },
+      { label: '分布范围', score: 83, anomalyCount: 18, reviewedCount: 10 },
+    ],
+    stats: [
+      { icon: 'oil_barrel', label: '覆盖井数', value: '156口' },
+      { icon: 'view_column', label: '已选字段', value: '23个' },
+      { icon: 'warning', label: '待复核异常', value: '47条', highlight: true },
+      { icon: 'check_circle', label: '已处理异常', value: '92条' },
+      { icon: 'percent', label: '修复完成率', value: '66.2%' },
+    ],
+    cards: {
+      consistency: { score: 88, metrics: [
+        { label: '单位异常', value: 5, color: 'error' },
+        { label: '量纲异常', value: 3, color: 'error' },
+        { label: '量级异常', value: 4, color: 'warning' },
+      ] },
+      completeness: { score: 91, metrics: [
+        { label: '整体完整率', value: '91%', color: 'success' },
+        { label: '必填缺失', value: 12, color: 'error' },
+        { label: '连续缺失', value: 7, color: 'warning' },
+      ] },
+      distribution: { score: 83, metrics: [
+        { label: '统计异常', value: 11, color: 'warning' },
+        { label: '物理越界', value: 3, color: 'error' },
+        { label: '公式异常', value: 4, color: 'warning' },
+      ] },
+      correlation: { score: 79, metrics: [
+        { label: '字段组合数', value: 12, color: 'primary' },
+        { label: '低相关组合', value: 4, color: 'warning' },
+        { label: '高残差数', value: 6, color: 'error' },
+      ] },
+    },
+  },
+  // 长北区块压裂工程数据集
+  '2': {
+    radar: [
+      { label: '一致性', score: 94, anomalyCount: 4, reviewedCount: 4 },
+      { label: '相关性', score: 90, anomalyCount: 8, reviewedCount: 8 },
+      { label: '完整性', score: 96, anomalyCount: 2, reviewedCount: 2 },
+      { label: '分布范围', score: 89, anomalyCount: 6, reviewedCount: 6 },
+    ],
+    stats: [
+      { icon: 'oil_barrel', label: '覆盖井数', value: '88口' },
+      { icon: 'view_column', label: '已选字段', value: '31个' },
+      { icon: 'warning', label: '待复核异常', value: '6条', highlight: true },
+      { icon: 'check_circle', label: '已处理异常', value: '108条' },
+      { icon: 'percent', label: '修复完成率', value: '94.7%' },
+    ],
+    cards: {
+      consistency: { score: 94, metrics: [
+        { label: '单位异常', value: 2, color: 'error' },
+        { label: '量纲异常', value: 1, color: 'error' },
+        { label: '量级异常', value: 1, color: 'warning' },
+      ] },
+      completeness: { score: 96, metrics: [
+        { label: '整体完整率', value: '96%', color: 'success' },
+        { label: '必填缺失', value: 3, color: 'error' },
+        { label: '连续缺失', value: 2, color: 'warning' },
+      ] },
+      distribution: { score: 89, metrics: [
+        { label: '统计异常', value: 5, color: 'warning' },
+        { label: '物理越界', value: 1, color: 'error' },
+        { label: '公式异常', value: 2, color: 'warning' },
+      ] },
+      correlation: { score: 90, metrics: [
+        { label: '字段组合数', value: 18, color: 'primary' },
+        { label: '低相关组合', value: 2, color: 'warning' },
+        { label: '高残差数', value: 3, color: 'error' },
+      ] },
+    },
+  },
+  // 陇东区块地质参数数据集（质控中）
+  '3': {
+    radar: [
+      { label: '一致性', score: 72, anomalyCount: 21, reviewedCount: 9 },
+      { label: '相关性', score: 68, anomalyCount: 30, reviewedCount: 11 },
+      { label: '完整性', score: 80, anomalyCount: 14, reviewedCount: 6 },
+      { label: '分布范围', score: 74, anomalyCount: 25, reviewedCount: 8 },
+    ],
+    stats: [
+      { icon: 'oil_barrel', label: '覆盖井数', value: '204口' },
+      { icon: 'view_column', label: '已选字段', value: '19个' },
+      { icon: 'warning', label: '待复核异常', value: '90条', highlight: true },
+      { icon: 'check_circle', label: '已处理异常', value: '34条' },
+      { icon: 'percent', label: '修复完成率', value: '27.4%' },
+    ],
+    cards: {
+      consistency: { score: 72, metrics: [
+        { label: '单位异常', value: 9, color: 'error' },
+        { label: '量纲异常', value: 6, color: 'error' },
+        { label: '量级异常', value: 6, color: 'warning' },
+      ] },
+      completeness: { score: 80, metrics: [
+        { label: '整体完整率', value: '80%', color: 'success' },
+        { label: '必填缺失', value: 21, color: 'error' },
+        { label: '连续缺失', value: 13, color: 'warning' },
+      ] },
+      distribution: { score: 74, metrics: [
+        { label: '统计异常', value: 17, color: 'warning' },
+        { label: '物理越界', value: 6, color: 'error' },
+        { label: '公式异常', value: 8, color: 'warning' },
+      ] },
+      correlation: { score: 68, metrics: [
+        { label: '字段组合数', value: 9, color: 'primary' },
+        { label: '低相关组合', value: 7, color: 'warning' },
+        { label: '高残差数', value: 11, color: 'error' },
+      ] },
+    },
+  },
+  // 镇原区块生产监测数据集
+  '4': {
+    radar: [
+      { label: '一致性', score: 96, anomalyCount: 3, reviewedCount: 3 },
+      { label: '相关性', score: 93, anomalyCount: 5, reviewedCount: 5 },
+      { label: '完整性', score: 97, anomalyCount: 1, reviewedCount: 1 },
+      { label: '分布范围', score: 94, anomalyCount: 4, reviewedCount: 4 },
+    ],
+    stats: [
+      { icon: 'oil_barrel', label: '覆盖井数', value: '132口' },
+      { icon: 'view_column', label: '已选字段', value: '27个' },
+      { icon: 'warning', label: '待复核异常', value: '4条', highlight: true },
+      { icon: 'check_circle', label: '已处理异常', value: '141条' },
+      { icon: 'percent', label: '修复完成率', value: '97.2%' },
+    ],
+    cards: {
+      consistency: { score: 96, metrics: [
+        { label: '单位异常', value: 1, color: 'error' },
+        { label: '量纲异常', value: 1, color: 'error' },
+        { label: '量级异常', value: 1, color: 'warning' },
+      ] },
+      completeness: { score: 97, metrics: [
+        { label: '整体完整率', value: '97%', color: 'success' },
+        { label: '必填缺失', value: 1, color: 'error' },
+        { label: '连续缺失', value: 1, color: 'warning' },
+      ] },
+      distribution: { score: 94, metrics: [
+        { label: '统计异常', value: 3, color: 'warning' },
+        { label: '物理越界', value: 1, color: 'error' },
+        { label: '公式异常', value: 1, color: 'warning' },
+      ] },
+      correlation: { score: 93, metrics: [
+        { label: '字段组合数', value: 22, color: 'primary' },
+        { label: '低相关组合', value: 1, color: 'warning' },
+        { label: '高残差数', value: 2, color: 'error' },
+      ] },
+    },
+  },
+}
 
 // 一致性柱图数据
 function ConsistencyBarChart() {
@@ -198,7 +360,7 @@ function CorrelationMatrix() {
 
   // 列数 = 1 行标签列 + n 数据列；行数 = 1 列标题行 + n 数据行
   return (
-    <div className="corr-matrix" role="img" aria-label="关键字段相关矩阵"
+    <div className="corr-matrix" role="img" aria-label="关键字段相��矩阵"
       style={{ gridTemplateColumns: `minmax(0,1.2fr) repeat(${n}, minmax(0,1fr))` }}
     >
       {/* 左上角空格 */}
@@ -229,59 +391,12 @@ function CorrelationMatrix() {
   )
 }
 
-const CARDS = [
-  {
-    type: 'consistency' as QCCardType,
-    title: '一致性校验',
-    icon: 'rule',
-    score: 88,
-    metrics: [
-      { label: '单位异常', value: 5, color: 'error' },
-      { label: '量纲异常', value: 3, color: 'error' },
-      { label: '量级异常', value: 4, color: 'warning' },
-      { label: '待复核', value: 8, color: 'warning' },
-    ],
-    chart: <ConsistencyBarChart />,
-  },
-  {
-    type: 'completeness' as QCCardType,
-    title: '完整性校验',
-    icon: 'checklist',
-    score: 91,
-    metrics: [
-      { label: '整体完整率', value: '91%', color: 'success' },
-      { label: '必填缺失', value: 12, color: 'error' },
-      { label: '连续缺失', value: 7, color: 'warning' },
-      { label: '可补全', value: 18, color: 'primary' },
-    ],
-    chart: <CompletenessBarChart />,
-  },
-  {
-    type: 'distribution' as QCCardType,
-    title: '分布范围校验',
-    icon: 'bar_chart',
-    score: 83,
-    metrics: [
-      { label: '统计异常', value: 11, color: 'warning' },
-      { label: '物理越界', value: 3, color: 'error' },
-      { label: '公式异常', value: 4, color: 'warning' },
-      { label: '待复核极值', value: 9, color: 'warning' },
-    ],
-    chart: <BoxPlotChart />,
-  },
-  {
-    type: 'correlation' as QCCardType,
-    title: '相关性校验',
-    icon: 'scatter_plot',
-    score: 79,
-    metrics: [
-      { label: '字段组合数', value: 12, color: 'primary' },
-      { label: '低相关组合', value: 4, color: 'warning' },
-      { label: '高残差数', value: 6, color: 'error' },
-      { label: '异常井数', value: 8, color: 'warning' },
-    ],
-    chart: <CorrelationMatrix />,
-  },
+// 卡片静态定义（图标 / 标题 / 代表图件），分数与指标由数据集内容注入
+const CARD_DEFS: { type: QCCardType; title: string; icon: string; chart: ReactNode }[] = [
+  { type: 'consistency',  title: '一致性校验',   icon: 'rule',         chart: <ConsistencyBarChart /> },
+  { type: 'completeness', title: '完整性校验',   icon: 'checklist',    chart: <CompletenessBarChart /> },
+  { type: 'distribution', title: '分布范围校验', icon: 'bar_chart',    chart: <BoxPlotChart /> },
+  { type: 'correlation',  title: '相关性校验',   icon: 'scatter_plot', chart: <CorrelationMatrix /> },
 ]
 
 const METRIC_COLORS: Record<string, string> = {
@@ -291,13 +406,47 @@ const METRIC_COLORS: Record<string, string> = {
   primary: 'var(--md-sys-color-primary)',
 }
 
-export function QCOverview({ onCardClick, hoveredCard }: QCOverviewProps) {
+export function QCOverview({ onCardClick, hoveredCard, datasetId = '1' }: QCOverviewProps) {
+  const getScoreLevel = (s: number) => (s >= 90 ? '优' : s >= 80 ? '良' : s >= 70 ? '中' : '差')
+  const getScoreColor = (s: number) => (s >= 90 ? 'var(--app-color-success)' : s >= 75 ? 'var(--app-color-warning)' : 'var(--md-sys-color-error)')
+
+  // 当前数据集元信息 + 质检内容
+  const meta = MOCK_DATASETS.find((d) => d.id === datasetId)
+  const content = DATASET_CONTENT[datasetId]
+
+  // 无质检结果（初始化中 / 新建 / 未质检）→ 空状态
+  if (!content) {
+    return (
+      <div className="qc-overview">
+        <section className="overview-header" aria-label="数据集概览">
+          <div className="overview-meta">
+            <div className="overview-meta-left">
+              <h2 className="md-typescale-title-medium overview-dataset-name">
+                {meta?.name ?? '未选择数据集'}
+              </h2>
+              <div className="overview-tags">
+                {meta && <span className="overview-tag overview-tag--version">{meta.version}</span>}
+                {meta && <span className="overview-tag overview-tag--status">{meta.status}</span>}
+                {meta && <span className="overview-tag overview-tag--date">更新: {meta.updatedAt}</span>}
+              </div>
+            </div>
+          </div>
+        </section>
+        <div className="qc-empty-state" role="status">
+          <md-icon class="qc-empty-icon">hourglass_empty</md-icon>
+          <div className="md-typescale-title-small qc-empty-title">暂无质检数据</div>
+          <div className="md-typescale-body-medium qc-empty-desc">
+            该数据集尚未完成质检，点击右侧「开始质检」生成质量分析结果。
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  const RADAR_DATA = content.radar
   const overallScore = Math.round(
     RADAR_DATA.reduce((sum, d) => sum + d.score, 0) / RADAR_DATA.length,
   )
-
-  const getScoreLevel = (s: number) => (s >= 90 ? '优' : s >= 80 ? '良' : s >= 70 ? '中' : '差')
-  const getScoreColor = (s: number) => (s >= 90 ? 'var(--app-color-success)' : s >= 75 ? 'var(--app-color-warning)' : 'var(--md-sys-color-error)')
 
   return (
     <div className="qc-overview">
@@ -306,12 +455,12 @@ export function QCOverview({ onCardClick, hoveredCard }: QCOverviewProps) {
         <div className="overview-meta">
           <div className="overview-meta-left">
             <h2 className="md-typescale-title-medium overview-dataset-name">
-              苏里格区块2024年综合数据集
+              {meta?.name ?? '苏里格区块2024年综合数据集'}
             </h2>
             <div className="overview-tags">
-              <span className="overview-tag overview-tag--version">v3.2</span>
-              <span className="overview-tag overview-tag--status">待复核</span>
-              <span className="overview-tag overview-tag--date">更新: 2024-07-20</span>
+              <span className="overview-tag overview-tag--version">{meta?.version ?? 'v3.2'}</span>
+              <span className="overview-tag overview-tag--status">{meta?.status ?? '待复核'}</span>
+              <span className="overview-tag overview-tag--date">更新: {meta?.updatedAt ?? '2024-07-20'}</span>
             </div>
           </div>
           <div className="overview-score-block">
@@ -333,13 +482,7 @@ export function QCOverview({ onCardClick, hoveredCard }: QCOverviewProps) {
 
         {/* 统计指标行 */}
         <div className="overview-stats-row" role="list">
-          {[
-            { icon: 'oil_barrel', label: '覆盖井数', value: '156口' },
-            { icon: 'view_column', label: '已选字段', value: '23个' },
-            { icon: 'warning', label: '待复核异常', value: '47条', highlight: true },
-            { icon: 'check_circle', label: '已处理异常', value: '92条' },
-            { icon: 'percent', label: '修复完成率', value: '66.2%' },
-          ].map((stat) => (
+          {content.stats.map((stat) => (
             <div key={stat.label} className="overview-stat-item" role="listitem">
               <md-icon class={`overview-stat-icon${stat.highlight ? ' overview-stat-icon--warn' : ''}`}>
                 {stat.icon}
@@ -406,7 +549,9 @@ export function QCOverview({ onCardClick, hoveredCard }: QCOverviewProps) {
       <section className="qc-cards-section" aria-label="四类质检结果">
         <div className="qc-cards-title md-typescale-label-large">四类质检概览</div>
         <div className="qc-cards-grid" role="list">
-          {CARDS.map((card) => {
+          {CARD_DEFS.map((def) => {
+            const cardData = content.cards[def.type]
+            const card = { ...def, score: cardData.score, metrics: cardData.metrics }
             const isHovered = hoveredCard === card.type
             return (
               <article

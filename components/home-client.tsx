@@ -151,7 +151,7 @@ export function HomeClient() {
           onViewReport={(id) => { setPreviewReportId(id); setPage('report-preview') }} />
         <FieldTree collapsed={fieldCollapsed} onToggleCollapse={() => setFieldCollapsed(v => !v)} />
         <main className="content-area" id="main-content">
-          <QCOverview onCardClick={handleCardClick} hoveredCard={hoveredCard} />
+          <QCOverview onCardClick={handleCardClick} hoveredCard={hoveredCard} datasetId={selectedDatasetId} />
         </main>
         <StepToolsPanel
           activeStep={activeStep}

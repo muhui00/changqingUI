@@ -600,6 +600,31 @@
   padding: 0;
 }
 
+/* 无质检数据空状态 */
+.qc-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 64px 24px;
+  text-align: center;
+  color: var(--md-sys-color-on-surface-variant);
+}
+.qc-empty-icon {
+  font-size: 48px;
+  width: 48px;
+  height: 48px;
+  color: var(--md-sys-color-outline);
+}
+.qc-empty-title {
+  color: var(--md-sys-color-on-surface);
+}
+.qc-empty-desc {
+  max-width: 360px;
+  color: var(--md-sys-color-on-surface-variant);
+}
+
 /* 概览头部 */
 .overview-header {
   background: var(--md-sys-color-surface);
@@ -2400,7 +2425,7 @@
   outline: none;
 }
 
-/* ── �����������型 & 状态标签 ── */
+/* ── �������������型 & 状态标签 ── */
 .rc-type-badge {
   display: inline-flex;
   align-items: center;

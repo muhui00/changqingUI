@@ -20,7 +20,7 @@ export interface Dataset {
   updatedAt: string
 }
 
-const MOCK_DATASETS: Dataset[] = [
+export const MOCK_DATASETS: Dataset[] = [
   {
     id: '1',
     name: '苏里格区块2024年综合数据集',
