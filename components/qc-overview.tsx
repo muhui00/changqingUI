@@ -534,6 +534,19 @@ export function QCOverview({ onCardClick, hoveredCard, datasetId = '1', datasetM
     RADAR_DATA.reduce((sum, d) => sum + d.score, 0) / RADAR_DATA.length,
   )
 
+  // 复核前得分：由未处理异常比例推导（复核后总体高于复核前，体现修复带来的提升）
+  const RADAR_DIMS = RADAR_DATA.map((d) => {
+    const unresolved = Math.max(0, d.anomalyCount - d.reviewedCount)
+    const drop = Math.min(30, Math.round(d.anomalyCount * 0.8 + unresolved * 0.6))
+    return { ...d, beforeScore: Math.max(35, d.score - drop) }
+  })
+
+  // 左侧关键指标：综合评分 + 数据集统计（分两行展示）
+  const METRIC_ITEMS: StatItem[] = [
+    { icon: 'grade', label: '综合评分', value: `${overallScore}分` },
+    ...content.stats,
+  ]
+
   return (
     <div className="qc-overview">
       {/* 数据集概览头部 */}
@@ -566,67 +579,44 @@ export function QCOverview({ onCardClick, hoveredCard, datasetId = '1', datasetM
           </div>
         </div>
 
-        {/* 统计指标行 */}
-        <div className="overview-stats-row" role="list">
-          {content.stats.map((stat) => (
-            <div key={stat.label} className="overview-stat-item" role="listitem">
-              <md-icon class={`overview-stat-icon${stat.highlight ? ' overview-stat-icon--warn' : ''}`}>
-                {stat.icon}
-              </md-icon>
-              <div>
-                <div className="md-typescale-label-small overview-stat-label">{stat.label}</div>
-                <div
-                  className="md-typescale-title-small overview-stat-value"
-                  style={stat.highlight ? { color: 'var(--app-color-warning)' } : undefined}
-                >
-                  {stat.value}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* 四维质量雷达：左侧维度卡片 + 右侧雷达图 */}
+        {/* 四维质量雷达：左侧关键指标 + 右侧雷达图（复核前后） */}
         <div className="overview-radar-section">
-          {/* 左侧：维度列表 */}
-          <div className="overview-radar-dims">
-            <div className="md-typescale-label-medium overview-section-label">四维质量雷达</div>
-            <div className="overview-dim-list">
-              {RADAR_DATA.map((d) => {
-                const color = d.score >= 90
-                  ? 'var(--app-color-success)'
-                  : d.score >= 75
-                  ? 'var(--app-color-warning)'
-                  : 'var(--md-sys-color-error)'
-                return (
-                  <div key={d.label} className="overview-dim-item">
-                    <div className="overview-dim-score-bar">
-                      <div
-                        className="overview-dim-score-fill"
-                        style={{ width: `${d.score}%`, background: color }}
-                      />
-                    </div>
-                    <div className="overview-dim-info">
-                      <span className="md-typescale-label-medium overview-dim-label">{d.label}</span>
-                      <div className="overview-dim-numbers">
-                        <span className="md-typescale-title-small overview-dim-score" style={{ color }}>
-                          {d.score}分
-                        </span>
-                        {d.anomalyCount > 0 && (
-                          <span className="md-typescale-label-small overview-dim-anomaly" style={{ color }}>
-                            异常{d.anomalyCount}条
-                          </span>
-                        )}
-                      </div>
+          {/* 左侧：关键指标（分两行） */}
+          <div className="overview-radar-metrics">
+            <div className="md-typescale-label-medium overview-section-label">数据集关键指标</div>
+            <div className="overview-metric-grid">
+              {METRIC_ITEMS.map((m) => (
+                <div key={m.label} className="overview-metric-item" role="listitem">
+                  <md-icon class={`overview-metric-icon${m.highlight ? ' overview-metric-icon--warn' : ''}`}>
+                    {m.icon}
+                  </md-icon>
+                  <div className="overview-metric-text">
+                    <div className="md-typescale-label-small overview-metric-label">{m.label}</div>
+                    <div
+                      className="md-typescale-title-small overview-metric-value"
+                      style={m.highlight ? { color: 'var(--app-color-warning)' } : undefined}
+                    >
+                      {m.value}
                     </div>
                   </div>
-                )
-              })}
+                </div>
+              ))}
             </div>
           </div>
-          {/* 右侧：纯净雷达图 */}
+          {/* 右侧：雷达图（复核前 vs 复核后） */}
           <div className="overview-radar-chart">
-            <RadarChart dimensions={RADAR_DATA} size={220} />
+            <div className="md-typescale-label-medium overview-section-label">四维质量雷达</div>
+            <RadarChart dimensions={RADAR_DIMS} size={220} />
+            <div className="overview-radar-legend">
+              <span className="overview-radar-legend-item">
+                <span className="overview-radar-swatch overview-radar-swatch--before" />
+                复核前
+              </span>
+              <span className="overview-radar-legend-item">
+                <span className="overview-radar-swatch overview-radar-swatch--after" />
+                复核后
+              </span>
+            </div>
           </div>
         </div>
       </section>

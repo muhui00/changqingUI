@@ -762,87 +762,106 @@
 /* 四维质量雷达 — 左右分栏 */
 .overview-radar-section {
   display: flex;
-  gap: 12px;
+  gap: 20px;
   align-items: center;
   padding: 12px 0 14px;
   border-top: 1px solid var(--md-sys-color-outline-variant);
   margin-top: 4px;
 }
 
-/* 左侧：标题 + 维度列表 */
-.overview-radar-dims {
+.overview-section-label {
+  color: var(--md-sys-color-on-surface-variant);
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+
+/* 左侧：关键指标（分两行 x 三列） */
+.overview-radar-metrics {
   flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 6px;
 }
 
-.overview-section-label {
-  color: var(--md-sys-color-on-surface-variant);
-  font-weight: 500;
-  margin-bottom: 2px;
+.overview-metric-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
 }
 
-.overview-dim-list {
+.overview-metric-item {
   display: flex;
-  flex-direction: column;
-  gap: 9px;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: 10px;
+  background: var(--md-sys-color-surface-container-lowest);
 }
 
-.overview-dim-item {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-
-.overview-dim-score-bar {
-  height: 4px;
-  width: 100%;
-  background: var(--md-sys-color-surface-container-highest);
-  border-radius: 2px;
-  overflow: hidden;
-}
-
-.overview-dim-score-fill {
-  height: 100%;
-  border-radius: 2px;
-}
-
-.overview-dim-info {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-}
-
-.overview-dim-label {
-  color: var(--md-sys-color-on-surface);
-  font-weight: 600;
-}
-
-.overview-dim-numbers {
-  display: flex;
-  align-items: baseline;
-  gap: 5px;
+.overview-metric-icon {
+  font-size: 20px;
+  color: var(--md-sys-color-primary);
   flex-shrink: 0;
 }
 
-.overview-dim-score {
-  font-weight: 700;
-  line-height: 1;
+.overview-metric-icon--warn {
+  color: var(--app-color-warning);
 }
 
-.overview-dim-anomaly {
-  opacity: 0.85;
+.overview-metric-text {
+  min-width: 0;
+}
+
+.overview-metric-label {
+  color: var(--md-sys-color-on-surface-variant);
   white-space: nowrap;
 }
 
-/* 右侧：纯净雷达图 */
+.overview-metric-value {
+  color: var(--md-sys-color-on-surface);
+  font-weight: 700;
+}
+
+/* 右侧：雷达图 + 复核前后图例 */
 .overview-radar-chart {
   flex-shrink: 0;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+}
+
+.overview-radar-legend {
+  display: flex;
+  gap: 16px;
+  margin-top: 8px;
+}
+
+.overview-radar-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+.overview-radar-swatch {
+  width: 16px;
+  height: 0;
+  border-top-width: 2px;
+  border-top-style: solid;
+  flex-shrink: 0;
+}
+
+.overview-radar-swatch--before {
+  border-top-style: dashed;
+  border-top-color: var(--md-sys-color-on-surface-variant);
+}
+
+.overview-radar-swatch--after {
+  border-top-color: var(--md-sys-color-primary);
+  border-top-width: 3px;
 }
 
 /* ===== QC Cards Section ===== */
