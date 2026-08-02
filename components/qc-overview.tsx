@@ -550,23 +550,22 @@ export function QCOverview({ onCardClick, hoveredCard, datasetId = '1', datasetM
     <div className="qc-overview">
       {/* 数据集概览头部 */}
       <section className="overview-header" aria-label="数据集概览">
-        <div className="overview-meta">
-          <div className="overview-meta-left">
-            <h2 className="md-typescale-title-medium overview-dataset-name">
-              {meta?.name ?? '苏里格区块2024年综合数据集'}
-            </h2>
-            <div className="overview-tags">
-              <span className="overview-tag overview-tag--version">{meta?.version ?? 'v3.2'}</span>
-              <span className="overview-tag overview-tag--status">{meta?.status ?? '待复核'}</span>
-              <span className="overview-tag overview-tag--date">更新: {meta?.updatedAt ?? '2024-07-20'}</span>
-            </div>
-          </div>
-        </div>
-
         {/* 四维质量雷达：左侧关键指标 + 右侧雷达图（复核前后） */}
         <div className="overview-radar-section">
-          {/* 左侧：关键指标（分两行） */}
+          {/* 左侧：数据集信息 + 关键指标（分两行） */}
           <div className="overview-radar-metrics">
+            <div className="overview-meta">
+              <div className="overview-meta-left">
+                <h2 className="md-typescale-title-medium overview-dataset-name">
+                  {meta?.name ?? '苏里格区块2024年综合数据集'}
+                </h2>
+                <div className="overview-tags">
+                  <span className="overview-tag overview-tag--version">{meta?.version ?? 'v3.2'}</span>
+                  <span className="overview-tag overview-tag--status">{meta?.status ?? '待复核'}</span>
+                  <span className="overview-tag overview-tag--date">更新: {meta?.updatedAt ?? '2024-07-20'}</span>
+                </div>
+              </div>
+            </div>
             <div className="md-typescale-label-medium overview-section-label">数据集关键指标</div>
             <div className="overview-metric-grid">
               {METRIC_ITEMS.map((m) => (
