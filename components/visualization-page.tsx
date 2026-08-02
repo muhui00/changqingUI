@@ -4,7 +4,7 @@ import { useState } from 'react'
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts'
-import { DatasetList } from './dataset-list'
+import { DatasetList, MOCK_DATASETS, type Dataset } from './dataset-list'
 
 const WELL_LIST = [
   { id: 'w1', name: '苏36-11井' },
@@ -182,6 +182,7 @@ interface VisualizationPageProps {
 
 export function VisualizationPage({ onBack }: VisualizationPageProps) {
   // Left panels
+  const [datasets, setDatasets] = useState<Dataset[]>(MOCK_DATASETS)
   const [datasetCollapsed, setDatasetCollapsed] = useState(false)
   const [fieldCollapsed, setFieldCollapsed] = useState(false)
   const [selectedDatasetId, setSelectedDatasetId] = useState('1')
@@ -248,6 +249,8 @@ export function VisualizationPage({ onBack }: VisualizationPageProps) {
     <div className="viz-page">
       {/* ── 数据集列表面板（与数据质控总览完全一致）── */}
       <DatasetList
+        datasets={datasets}
+        onDatasetsChange={setDatasets}
         selectedId={selectedDatasetId}
         onSelect={setSelectedDatasetId}
         collapsed={datasetCollapsed}
