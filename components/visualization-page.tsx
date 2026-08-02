@@ -81,26 +81,59 @@ const DEFAULT_CATEGORIES: VizFieldCategory[] = [
   },
 ]
 
-// ── Production curve mock data ────────────────────────────────────────────────
-function genProductionData() {
-  const data = []
+// ── 多序列曲线数据（按字段 id 生成，覆盖地质/工程/生产/测井各类参数）──────────────
+// 每个字段的基准值、波动幅度及特性，供曲线图按勾选字段动态绘制
+const FIELD_SERIES: Record<string, { base: number; noise: number; min?: number; cumulative?: boolean; shutInDrop?: boolean }> = {
+  // 地质参数
+  porosity: { base: 12, noise: 1.5 },
+  permeability: { base: 0.6, noise: 0.15, min: 0.05 },
+  reservoir_thick: { base: 26, noise: 2 },
+  saturation: { base: 66, noise: 3 },
+  // 工程参数
+  sand_volume: { base: 1200, noise: 140 },
+  fluid_volume: { base: 2400, noise: 220 },
+  frac_stages: { base: 22, noise: 1.5 },
+  cluster_spacing: { base: 15, noise: 1.2 },
+  // 生产参数
+  daily_gas: { base: 30, noise: 4, shutInDrop: true },
+  daily_water: { base: 8, noise: 2, min: 0, shutInDrop: true },
+  oil_pressure: { base: 42, noise: 2, shutInDrop: true },
+  casing_pressure: { base: 44, noise: 2, shutInDrop: true },
+  cum_gas: { base: 0, noise: 0, cumulative: true },
+  // 测井参数
+  gr: { base: 75, noise: 15 },
+  sp: { base: -20, noise: 8 },
+  rt: { base: 45, noise: 20, min: 1 },
+  ac: { base: 90, noise: 12 },
+  den: { base: 2.45, noise: 0.08 },
+  cn: { base: 18, noise: 4 },
+}
+
+function genSeriesData() {
+  const rng = makeRng(20200401)
   const base = new Date('2020-04-01')
+  const rows: Record<string, number | string>[] = []
+  let cumGas = 0
   for (let i = 0; i < 120; i++) {
     const d = new Date(base)
     d.setDate(d.getDate() + i)
-    const noise = () => (Math.random() - 0.5) * 6
     const isShutIn = i % 18 === 0
-    data.push({
-      date: `${d.getMonth() + 1}月${d.getDate()}日`,
-      日产气: isShutIn ? 2 : Math.max(0, 30 + noise() * 2),
-      日产水: isShutIn ? 0 : Math.max(0, 8 + noise()),
-      油压: isShutIn ? 12 : Math.max(0, 42 + noise()),
-      套压: isShutIn ? 14 : Math.max(0, 44 + noise()),
-    })
+    const row: Record<string, number | string> = { date: `${d.getMonth() + 1}月${d.getDate()}日` }
+    const dailyGas = isShutIn ? 2 : Math.max(0, 30 + (rng() - 0.5) * 8)
+    cumGas += dailyGas
+    for (const [id, c] of Object.entries(FIELD_SERIES)) {
+      if (id === 'daily_gas') { row[id] = +dailyGas.toFixed(1); continue }
+      if (id === 'cum_gas') { row[id] = +cumGas.toFixed(0); continue }
+      let v = c.base + (rng() - 0.5) * 2 * c.noise
+      if (isShutIn && c.shutInDrop) v = c.base * 0.3
+      if (c.min != null) v = Math.max(c.min, v)
+      row[id] = +v.toFixed(Math.abs(c.base) < 5 ? 2 : 1)
+    }
+    rows.push(row)
   }
-  return data
+  return rows
 }
-const PRODUCTION_DATA = genProductionData()
+const SERIES_DATA = genSeriesData()
 
 // ── Well log mock data ────────────────────────────────────────────────────────
 const LOG_TRACKS = [
@@ -471,28 +504,32 @@ export function VisualizationPage({ onBack }: VisualizationPageProps) {
   )
 }
 
-// ── Production Chart ──────────────────────────────────────────────────────────
-
-const PROD_FIELD_CONFIG: Record<string, { color: string; yAxis: string; unit: string }> = {
-  日产气: { color: '#1565c0', yAxis: 'left1', unit: '万m³' },
-  日产水: { color: '#2e7d32', yAxis: 'left1', unit: 'm³' },
-  油压:   { color: '#c62828', yAxis: 'right1', unit: 'MPa' },
-  套压:   { color: '#e65100', yAxis: 'right2', unit: 'MPa' },
-}
+// ── 曲线图（由左侧勾选字段驱动，支持地质/工程/生产/测井多类参数叠加）──────────────
 
 function ProductionChart({ fields }: { fields: VizField[] }) {
-  const [hoveredWell] = useState('焦页10-4HF')
+  if (fields.length === 0) {
+    return (
+      <div className="prod-chart-wrap">
+        <div className="prod-empty">
+          <md-icon>show_chart</md-icon>
+          <p className="prod-empty-title">请在左侧字段列表中勾选要展示的字段</p>
+          <span className="prod-empty-hint">支持地质、工程、生产、测井等多类参数曲线叠加对比</span>
+        </div>
+      </div>
+    )
+  }
 
-  const activeKeys = ['日产气', '日产水', '油压', '套压']
+  // 按单位聚合生成 Y 轴，左右交替排布
+  const units: string[] = []
+  fields.forEach(f => { const u = f.unit || '数值'; if (!units.includes(u)) units.push(u) })
+  const axisId = (u: string) => `axis-${units.indexOf(u)}`
+  const unitColor = (u: string) => fields.find(f => (f.unit || '数值') === u)?.color ?? '#1565c0'
 
   return (
     <div className="prod-chart-wrap">
-      {/* 工具栏 */}
-
-      {/* Recharts */}
       <div className="prod-chart-body">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={PRODUCTION_DATA} margin={{ top: 8, right: 80, left: 20, bottom: 8 }}>
+          <LineChart data={SERIES_DATA} margin={{ top: 8, right: 24, left: 8, bottom: 8 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="var(--md-sys-color-outline-variant)" />
             <XAxis
               dataKey="date"
@@ -500,34 +537,27 @@ function ProductionChart({ fields }: { fields: VizField[] }) {
               tickLine={false}
               interval={14}
             />
-            {/* Left Y axis - 产气 */}
-            <YAxis
-              yAxisId="left1"
-              orientation="left"
-              tick={{ fontSize: 11, fill: '#1565c0' }}
-              tickLine={false}
-              axisLine={false}
-              label={{ value: '日产气 (万m³)', angle: -90, position: 'insideLeft', fontSize: 11, fill: '#1565c0', dx: -8 }}
-            />
-            {/* Right Y axis 1 - 油压 */}
-            <YAxis
-              yAxisId="right1"
-              orientation="right"
-              tick={{ fontSize: 11, fill: '#c62828' }}
-              tickLine={false}
-              axisLine={false}
-              label={{ value: '油压 (MPa)', angle: 90, position: 'insideRight', fontSize: 11, fill: '#c62828', dx: 8 }}
-            />
-            {/* Right Y axis 2 - 日产水 */}
-            <YAxis
-              yAxisId="right2"
-              orientation="right"
-              tick={{ fontSize: 11, fill: '#2e7d32' }}
-              tickLine={false}
-              axisLine={false}
-              width={60}
-              label={{ value: '日产水 (m³)', angle: 90, position: 'insideRight', fontSize: 11, fill: '#2e7d32', dx: 24 }}
-            />
+            {units.map((u, i) => {
+              const isLeft = i % 2 === 0
+              return (
+                <YAxis
+                  key={u}
+                  yAxisId={axisId(u)}
+                  orientation={isLeft ? 'left' : 'right'}
+                  width={56}
+                  tick={{ fontSize: 11, fill: unitColor(u) }}
+                  tickLine={false}
+                  axisLine={false}
+                  label={{
+                    value: u,
+                    angle: isLeft ? -90 : 90,
+                    position: isLeft ? 'insideLeft' : 'insideRight',
+                    fontSize: 11,
+                    fill: unitColor(u),
+                  }}
+                />
+              )
+            })}
             <Tooltip
               contentStyle={{
                 fontSize: 12,
@@ -537,15 +567,20 @@ function ProductionChart({ fields }: { fields: VizField[] }) {
               }}
               labelStyle={{ color: 'var(--md-sys-color-on-surface)', fontWeight: 600 }}
             />
-            <Legend
-              wrapperStyle={{ fontSize: 12, paddingTop: 4 }}
-              iconType="circle"
-              iconSize={8}
-            />
-            <Line yAxisId="left1" type="monotone" dataKey="日产气" stroke="#1565c0" dot={false} strokeWidth={1.5} />
-            <Line yAxisId="right2" type="monotone" dataKey="日产水" stroke="#2e7d32" dot={false} strokeWidth={1.5} />
-            <Line yAxisId="right1" type="monotone" dataKey="油压" stroke="#c62828" dot={false} strokeWidth={1.5} />
-            <Line yAxisId="right1" type="monotone" dataKey="套压" stroke="#e65100" dot={false} strokeWidth={1.5} />
+            <Legend wrapperStyle={{ fontSize: 12, paddingTop: 4 }} iconType="circle" iconSize={8} />
+            {fields.map(f => (
+              <Line
+                key={f.id}
+                yAxisId={axisId(f.unit || '数值')}
+                type="monotone"
+                dataKey={f.id}
+                name={f.unit ? `${f.name} (${f.unit})` : f.name}
+                stroke={f.color}
+                dot={false}
+                strokeWidth={1.5}
+                connectNulls
+              />
+            ))}
           </LineChart>
         </ResponsiveContainer>
       </div>
@@ -907,7 +942,7 @@ function genStrata(): TableDataset {
       { label: '分层数', value: rows.length, unit: '层' },
       { label: '解释总厚', value: +thickArr.reduce((s, v) => s + v, 0).toFixed(1), unit: 'm', color: '#1565c0' },
       { label: '最厚层段', value: Math.max(...thickArr), unit: 'm', color: '#2e7d32' },
-      { label: '顶/底深', value: `${rows[0].top}~${rows[rows.length - 1].bottom}`, unit: 'm' },
+      { label: '顶/��深', value: `${rows[0].top}~${rows[rows.length - 1].bottom}`, unit: 'm' },
     ],
   }
 }
