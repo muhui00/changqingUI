@@ -409,7 +409,7 @@ function ReportContent({ report }: { report: ReportItem }) {
           { label: '已驳回', value: 4, unit: '条' },
           { label: '保留原值', value: 3, unit: '条' },
         ]} />
-        <p className="rp-body-text">本次质控共提交专家复核 50 条记录，完成 35 条，剩余 15 条（主要为物理边界判断和大模型抽取补全结果）待指派专家处理。建议发布前完成全部复核。</p>
+        <p className="rp-body-text">本次质检共提交专家复核 50 条记录，完成 35 条，剩余 15 条（主要为物理边界判断和大模型抽取补全结果）待指派专家处理。建议发布前完成全部复核。</p>
       </section>
 
       {/* 第8章 */}
@@ -435,7 +435,7 @@ function ReportContent({ report }: { report: ReportItem }) {
         <table className="rp-table">
           <tbody>
             <tr><td className="rp-audit-key">字段标准版本</td><td>字段标准库 v4.2</td></tr>
-            <tr><td className="rp-audit-key">质控规则版本</td><td>质控规则库 v3.1</td></tr>
+            <tr><td className="rp-audit-key">质检规则版本</td><td>质检规则库 v3.1</td></tr>
             <tr><td className="rp-audit-key">评分方案</td><td>综合加权评分 v2.0</td></tr>
             <tr><td className="rp-audit-key">报告模板</td><td>{report.template}</td></tr>
             <tr><td className="rp-audit-key">生成人</td><td>{report.author}</td></tr>
@@ -497,9 +497,9 @@ export function ReportPreview({ reportId, onBack }: ReportPreviewProps) {
   // 模拟报告查找
   const report: ReportItem = {
     id: reportId,
-    name: '苏里格区块2024年综合数据集_综合质控报告',
+    name: '苏里格区块2024年综合数据集_综合质检报告',
     reportNo: 'QCR-2024-001',
-    type: '综合质控报告',
+    type: '综合质检报告',
     dataset: '苏里格区块2024年综合数据集',
     datasetVersion: 'v3.2',
     score: 85,
@@ -508,7 +508,7 @@ export function ReportPreview({ reportId, onBack }: ReportPreviewProps) {
     version: 'v1.2',
     status: '待审阅',
     author: '张工',
-    template: '数据集综合质控标准模板 v2.1',
+    template: '数据集综合质检标准模板 v2.1',
   }
 
   const [expandedChapters, setExpandedChapters] = useState<Set<string>>(new Set(['ch-1', 'ch-2', 'ch-3']))

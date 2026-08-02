@@ -11,8 +11,8 @@ const roboto = Roboto({
 })
 
 export const metadata: Metadata = {
-  title: '长庆油气田数据质控平台',
-  description: '长庆油气田数据质控平台——一致性、完整性、分布范围与相关性数据质量管控系统',
+  title: '长庆油气田数据质检平台',
+  description: '长庆油气田数据质检平台——一致性、完整性、分布范围与相关性数据质量管控系统',
 }
 
 export const viewport: Viewport = {

@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { NewDatasetDialog } from './new-dataset-dialog'
 
 export type DatasetStatus =
-  | '质控中'
+  | '质检中'
   | '待复核'
   | '已完成'
   | '已归档'
@@ -20,7 +20,7 @@ export interface Dataset {
   updatedAt: string
 }
 
-const MOCK_DATASETS: Dataset[] = [
+export const MOCK_DATASETS: Dataset[] = [
   {
     id: '1',
     name: '苏里格区块2024年综合数据集',
@@ -41,7 +41,7 @@ const MOCK_DATASETS: Dataset[] = [
     id: '3',
     name: '陇东区块地质参数数据集',
     version: 'v1.5',
-    status: '质控中',
+    status: '质检中',
     updatedAt: '2024-07-22',
   },
   {
@@ -62,7 +62,7 @@ const MOCK_DATASETS: Dataset[] = [
 ]
 
 const STATUS_CONFIG: Record<DatasetStatus, { color: string; bg: string; label: string }> = {
-  质控中: { color: '#1565c0', bg: '#e3f2fd', label: '质控中' },
+  质检中: { color: '#1565c0', bg: '#e3f2fd', label: '质检中' },
   待复核: { color: '#e65100', bg: '#fff3e0', label: '待复核' },
   已完成: { color: '#2e7d32', bg: '#e8f5e9', label: '已完成' },
   已归档: { color: '#546e7a', bg: '#eceff1', label: '已归档' },
@@ -71,6 +71,8 @@ const STATUS_CONFIG: Record<DatasetStatus, { color: string; bg: string; label: s
 }
 
 interface DatasetListProps {
+  datasets: Dataset[]
+  onDatasetsChange: (datasets: Dataset[]) => void
   selectedId?: string
   onSelect: (id: string) => void
   collapsed: boolean
@@ -78,13 +80,13 @@ interface DatasetListProps {
   onViewReport?: (datasetId: string) => void
 }
 
-export function DatasetList({ selectedId, onSelect, collapsed, onToggleCollapse, onViewReport }: DatasetListProps) {
+export function DatasetList({ datasets, onDatasetsChange, selectedId, onSelect, collapsed, onToggleCollapse, onViewReport }: DatasetListProps) {
   const [search, setSearch] = useState('')
   const [filterStatus, setFilterStatus] = useState<DatasetStatus | '全部'>('全部')
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
 
-  const filtered = MOCK_DATASETS.filter((d) => {
+  const filtered = datasets.filter((d) => {
     const matchSearch = d.name.includes(search)
     const matchStatus = filterStatus === '全部' || d.status === filterStatus
     return matchSearch && matchStatus
@@ -141,8 +143,21 @@ export function DatasetList({ selectedId, onSelect, collapsed, onToggleCollapse,
       <NewDatasetDialog
         open={dialogOpen}
         onClose={() => setDialogOpen(false)}
-        onConfirm={(_name, _items) => {
+        onConfirm={(name) => {
           setDialogOpen(false)
+          // 1. 列表自动新增新数据集（初始化中）
+          const newId = `ds-${Date.now()}`
+          const newDataset: Dataset = {
+            id: newId,
+            name,
+            version: 'v1.0',
+            status: '初始化中',
+            updatedAt: new Date().toISOString().slice(0, 10),
+          }
+          onDatasetsChange([newDataset, ...datasets])
+          onSelect(newId)
+          // 2. 新建后数据集列表自动收起
+          if (!collapsed) onToggleCollapse()
         }}
       />
 
@@ -163,7 +178,7 @@ export function DatasetList({ selectedId, onSelect, collapsed, onToggleCollapse,
 
       {/* 状态筛选 */}
       <div className="dataset-filter-row">
-        {(['全部', '质控中', '待复核', '已完成'] as const).map((s) => (
+        {(['全部', '质检中', '待复核', '已完成'] as const).map((s) => (
           <button
             key={s}
             className={`filter-chip md-typescale-label-small${filterStatus === s ? ' filter-chip--active' : ''}`}
@@ -263,7 +278,17 @@ export function DatasetList({ selectedId, onSelect, collapsed, onToggleCollapse,
                     <div slot="headline">归档</div>
                   </md-menu-item>
                   <md-divider />
-                  <md-menu-item>
+                  <md-menu-item
+                    onClick={() => {
+                      setMenuOpenId(null)
+                      if (!window.confirm(`确定要删除数据集「${d.name}」吗？`)) return
+                      const rest = datasets.filter((item) => item.id !== d.id)
+                      onDatasetsChange(rest)
+                      if (selectedId === d.id) {
+                        onSelect(rest[0]?.id ?? '')
+                      }
+                    }}
+                  >
                     <md-icon slot="start" style={{ color: 'var(--md-sys-color-error)' }}>
                       delete
                     </md-icon>

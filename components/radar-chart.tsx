@@ -2,7 +2,8 @@
 
 interface RadarDimension {
   label: string
-  score: number // 0-100
+  score: number // 0-100（复核后得分）
+  beforeScore?: number // 0-100（复核前得分，可选）
   anomalyCount: number
   reviewedCount: number
 }
@@ -16,7 +17,8 @@ export function RadarChart({ dimensions, size = 240 }: RadarChartProps) {
   const n = dimensions.length
   const cx = size / 2
   const cy = size / 2
-  // No label padding needed — labels are rendered outside
+  // viewBox 四周预留 pad，保证轴标签不被裁切
+  const pad = 30
   const r = size / 2 - 18
 
   const getPoint = (index: number, radius: number): [number, number] => {
@@ -26,15 +28,26 @@ export function RadarChart({ dimensions, size = 240 }: RadarChartProps) {
 
   const rings = [0.25, 0.5, 0.75, 1.0]
 
+  const hasBefore = dimensions.some((d) => typeof d.beforeScore === 'number')
+
+  const toPath = (pts: [number, number][]) =>
+    pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${p[0].toFixed(2)},${p[1].toFixed(2)}`).join(' ') + ' Z'
+
+  // 复核后
   const dataPoints = dimensions.map((d, i) => getPoint(i, (d.score / 100) * r))
-  const polygonPath =
-    dataPoints.map((p, i) => `${i === 0 ? 'M' : 'L'}${p[0].toFixed(2)},${p[1].toFixed(2)}`).join(' ') + ' Z'
+  const polygonPath = toPath(dataPoints)
+
+  // 复核前
+  const beforePoints = dimensions.map((d, i) =>
+    getPoint(i, ((d.beforeScore ?? d.score) / 100) * r),
+  )
+  const beforePath = toPath(beforePoints)
 
   return (
     <svg
       width={size}
       height={size}
-      viewBox={`0 0 ${size} ${size}`}
+      viewBox={`${-pad} ${-pad} ${size + pad * 2} ${size + pad * 2}`}
       role="img"
       aria-label="四维质量雷达图"
     >
@@ -90,7 +103,41 @@ export function RadarChart({ dimensions, size = 240 }: RadarChartProps) {
         )
       })}
 
-      {/* Data fill */}
+      {/* 轴标签（维度名称） */}
+      {dimensions.map((d, i) => {
+        const [lx, ly] = getPoint(i, r + 12)
+        const anchor = Math.abs(lx - cx) < 4 ? 'middle' : lx > cx ? 'start' : 'end'
+        return (
+          <text
+            key={`ax-${i}`}
+            x={lx}
+            y={ly}
+            fontSize="9.5"
+            fontWeight="600"
+            textAnchor={anchor}
+            dominantBaseline="middle"
+            fill="var(--md-sys-color-on-surface-variant)"
+            fontFamily="var(--md-ref-typeface-plain)"
+          >
+            {d.label}
+          </text>
+        )
+      })}
+
+      {/* 复核前（灰色虚线） */}
+      {hasBefore && (
+        <path
+          d={beforePath}
+          fill="var(--md-sys-color-on-surface-variant)"
+          fillOpacity="0.06"
+          stroke="var(--md-sys-color-on-surface-variant)"
+          strokeWidth="1.5"
+          strokeDasharray="4,3"
+          strokeLinejoin="round"
+        />
+      )}
+
+      {/* 复核后（主色实线） */}
       <path
         d={polygonPath}
         fill="var(--md-sys-color-primary)"
@@ -100,7 +147,23 @@ export function RadarChart({ dimensions, size = 240 }: RadarChartProps) {
         strokeLinejoin="round"
       />
 
-      {/* Data points */}
+      {/* 复核前数据点 */}
+      {hasBefore &&
+        beforePoints.map((p, i) => (
+          <circle
+            key={`b-${i}`}
+            cx={p[0]}
+            cy={p[1]}
+            r="3"
+            fill="var(--md-sys-color-surface)"
+            stroke="var(--md-sys-color-on-surface-variant)"
+            strokeWidth="1.5"
+          >
+            <title>{`${dimensions[i].label} 复核前: ${dimensions[i].beforeScore}分`}</title>
+          </circle>
+        ))}
+
+      {/* 复核后数据点 */}
       {dataPoints.map((p, i) => (
         <circle
           key={i}
@@ -111,7 +174,7 @@ export function RadarChart({ dimensions, size = 240 }: RadarChartProps) {
           stroke="var(--md-sys-color-surface)"
           strokeWidth="1.5"
         >
-          <title>{`${dimensions[i].label}: ${dimensions[i].score}分 / 异常${dimensions[i].anomalyCount}条`}</title>
+          <title>{`${dimensions[i].label} 复核后: ${dimensions[i].score}分 / 异常${dimensions[i].anomalyCount}条`}</title>
         </circle>
       ))}
     </svg>

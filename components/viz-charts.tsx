@@ -4,9 +4,8 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceArea
 } from 'recharts'
-import { DatasetList, MOCK_DATASETS, type Dataset } from './dataset-list'
 
-const WELL_LIST = [
+export const WELL_LIST = [
   { id: 'w1', name: '苏36-11井' },
   { id: 'w2', name: '苏36-12井' },
   { id: 'w3', name: '苏36-13井' },
@@ -16,7 +15,7 @@ const WELL_LIST = [
   { id: 'w7', name: '苏14-25井' },
 ]
 
-interface VizField {
+export interface VizField {
   id: string
   name: string
   unit?: string
@@ -24,14 +23,14 @@ interface VizField {
   color: string
 }
 
-interface VizFieldCategory {
+export interface VizFieldCategory {
   id: string
   name: string
   icon: string
   fields: VizField[]
 }
 
-const DEFAULT_CATEGORIES: VizFieldCategory[] = [
+export const DEFAULT_CATEGORIES: VizFieldCategory[] = [
   {
     id: 'frac',
     name: '压裂施工',
@@ -93,7 +92,6 @@ const DEFAULT_CATEGORIES: VizFieldCategory[] = [
 ]
 
 // ── 多序列曲线数据（按字段 id 生成，覆盖地质/工程/生产/测井各类参数）──────────────
-// 每个字段的基准值、波动幅度及特性，供曲线图按勾选字段动态绘制
 const FIELD_SERIES: Record<string, { base: number; noise: number; min?: number; cumulative?: boolean; shutInDrop?: boolean }> = {
   // 压裂施工参数
   frac_rate: { base: 6.3, noise: 0.6, min: 0 },
@@ -123,6 +121,12 @@ const FIELD_SERIES: Record<string, { base: number; noise: number; min?: number; 
   ac: { base: 90, noise: 12 },
   den: { base: 2.45, noise: 0.08 },
   cn: { base: 18, noise: 4 },
+}
+
+// 确定性随机，保证每次渲染数据一致
+function makeRng(seed: number) {
+  let s = seed
+  return () => { s = (s * 1103515245 + 12345) & 0x7fffffff; return (s % 1000) / 1000 }
 }
 
 function genSeriesData() {
@@ -221,309 +225,11 @@ const LOG_TRACKS = [
   },
 ]
 
-// ── Component ─────────────────────────────────────────────────────────────────
+export type VizChartType = 'production' | 'welllog' | 'fractable'
 
-type VizChartType = 'production' | 'welllog' | 'fractable'
-
-interface VisualizationPageProps {
-  onBack?: () => void
-}
-
-export function VisualizationPage({ onBack }: VisualizationPageProps) {
-  // Left panels
-  const [datasets, setDatasets] = useState<Dataset[]>(MOCK_DATASETS)
-  const [datasetCollapsed, setDatasetCollapsed] = useState(false)
-  const [fieldCollapsed, setFieldCollapsed] = useState(false)
-  const [selectedDatasetId, setSelectedDatasetId] = useState('1')
-  const [selectedWells, setSelectedWells] = useState<Set<string>>(new Set(['w1', 'w2']))
-  const [wellCollapsed, setWellCollapsed] = useState(false)
-  const [fieldSearch, setFieldSearch] = useState('')
-  const [expandedCats, setExpandedCats] = useState<Set<string>>(new Set(['production', 'logging']))
-  const [categories, setCategories] = useState<VizFieldCategory[]>(DEFAULT_CATEGORIES)
-
-  // Tabs
-  const [activeChart, setActiveChart] = useState<VizChartType>('production')
-
-  // Welllog controls
-  const [selectedWell, setSelectedWell] = useState('苏36-11井')
-
-  const toggleWell = (id: string) => {
-    setSelectedWells(prev => {
-      const next = new Set(prev)
-      next.has(id) ? next.delete(id) : next.add(id)
-      return next
-    })
-  }
-
-  const toggleCat = (id: string) => {
-    setExpandedCats(prev => {
-      const next = new Set(prev)
-      next.has(id) ? next.delete(id) : next.add(id)
-      return next
-    })
-  }
-
-  const toggleField = (catId: string, fieldId: string) => {
-    setCategories(prev => prev.map(c =>
-      c.id !== catId ? c : {
-        ...c,
-        fields: c.fields.map(f => f.id !== fieldId ? f : { ...f, checked: !f.checked })
-      }
-    ))
-  }
-
-  const toggleCatAll = (catId: string) => {
-    setCategories(prev => prev.map(c => {
-      if (c.id !== catId) return c
-      const allChecked = c.fields.every(f => f.checked)
-      return { ...c, fields: c.fields.map(f => ({ ...f, checked: !allChecked })) }
-    }))
-  }
-
-  // 测井剖面图只显示测井参数类别
-  const visibleCats = activeChart === 'welllog'
-    ? categories.filter(c => c.id === 'logging')
-    : categories
-
-  const filteredCats = visibleCats.map(cat => ({
-    ...cat,
-    fields: cat.fields.filter(f =>
-      !fieldSearch || f.name.includes(fieldSearch) || (f.unit ?? '').includes(fieldSearch)
-    )
-  })).filter(cat => !fieldSearch || cat.fields.length > 0)
-
-  const checkedFields = categories.flatMap(c => c.fields.filter(f => f.checked))
-
-  return (
-    <div className="viz-page">
-      {/* ── 数据集列表面板（与数据质检总览完全一致）── */}
-      <DatasetList
-        datasets={datasets}
-        onDatasetsChange={setDatasets}
-        selectedId={selectedDatasetId}
-        onSelect={setSelectedDatasetId}
-        collapsed={datasetCollapsed}
-        onToggleCollapse={() => setDatasetCollapsed(v => !v)}
-      />
-
-      {/* ── 字段列表面板（无基本信息）── */}
-      {fieldCollapsed ? (
-        <aside className="panel-section panel-section--collapsed" aria-label="字段列表（已折叠）">
-          <div className="panel-collapsed-rail">
-            <md-icon-button aria-label="展开字段列表" onClick={() => setFieldCollapsed(false)}>
-              <md-icon>chevron_right</md-icon>
-            </md-icon-button>
-            <div className="panel-collapsed-label" aria-hidden="true">
-              <md-icon>list_alt</md-icon>
-              <span className="panel-collapsed-text">字段</span>
-            </div>
-          </div>
-        </aside>
-      ) : (
-        <aside className="panel-section field-tree-panel" aria-label="字段列表">
-          <div className="panel-header">
-            <span className="md-typescale-label-large panel-title">字段列表</span>
-            <div className="panel-header-actions">
-              <md-icon-button aria-label="收起" onClick={() => setFieldCollapsed(true)}>
-                <md-icon>chevron_left</md-icon>
-              </md-icon-button>
-            </div>
-          </div>
-
-          {/* 井列表 */}
-          <div className="ft-well-section">
-            <div
-              className="ft-well-header"
-              role="button"
-              aria-expanded={!wellCollapsed}
-              onClick={() => setWellCollapsed(v => !v)}
-            >
-              <md-icon class="ft-well-header-icon">
-                {wellCollapsed ? 'chevron_right' : 'expand_more'}
-              </md-icon>
-              <md-icon class="ft-well-section-icon">water_drop</md-icon>
-              <span className="ft-well-header-title">井列表</span>
-              {activeChart === 'welllog' || activeChart === 'fractable' ? (
-                <span className="ft-well-count">单选</span>
-              ) : (
-                <span className="ft-well-count">{selectedWells.size}/{WELL_LIST.length}</span>
-              )}
-            </div>
-            {!wellCollapsed && (
-              <div className="ft-well-body">
-                {activeChart === 'production' && (
-                  <div className="ft-well-actions">
-                    <button className="field-tree-action-btn" onClick={() => setSelectedWells(new Set(WELL_LIST.map(w => w.id)))}>全选</button>
-                    <button className="field-tree-action-btn" onClick={() => setSelectedWells(new Set())}>清空</button>
-                  </div>
-                )}
-                <ul className="ft-well-list">
-                  {WELL_LIST.map(w => {
-                    if (activeChart === 'welllog' || activeChart === 'fractable') {
-                      const isSelected = selectedWell === w.name
-                      return (
-                        <li key={w.id} className={`ft-well-item${isSelected ? ' ft-well-item--checked' : ''}`}>
-                          <label className="ft-well-item-label">
-                            <input
-                              type="radio"
-                              name="welllog-well"
-                              className="field-tree-checkbox"
-                              checked={isSelected}
-                              onChange={() => setSelectedWell(w.name)}
-                              aria-label={`选择 ${w.name}`}
-                            />
-                            <md-icon class="ft-well-icon">oil_barrel</md-icon>
-                            <span className="ft-well-name">{w.name}</span>
-                          </label>
-                        </li>
-                      )
-                    }
-                    const checked = selectedWells.has(w.id)
-                    return (
-                      <li key={w.id} className={`ft-well-item${checked ? ' ft-well-item--checked' : ''}`}>
-                        <label className="ft-well-item-label">
-                          <input type="checkbox" className="field-tree-checkbox" checked={checked}
-                            onChange={() => toggleWell(w.id)} aria-label={`选择 ${w.name}`} />
-                          <md-icon class="ft-well-icon">oil_barrel</md-icon>
-                          <span className="ft-well-name">{w.name}</span>
-                        </label>
-                      </li>
-                    )
-                  })}
-                </ul>
-              </div>
-            )}
-          </div>
-
-          <div className="ft-divider" />
-
-          {/* 字段计数 + 搜索 */}
-          <div className="field-tree-stat">
-            <span className="md-typescale-label-small field-tree-stat-text">
-              已选 <strong>{checkedFields.length}</strong> 个字段
-            </span>
-          </div>
-          <div className="dataset-list-search">
-            <div className="search-input-wrap">
-              <md-icon class="search-icon">search</md-icon>
-              <input type="search" className="search-input md-typescale-body-small"
-                placeholder="搜索字段..." value={fieldSearch}
-                onChange={e => setFieldSearch(e.target.value)} aria-label="搜索字段" />
-            </div>
-          </div>
-
-          {/* 字段树（无基本信息类别）*/}
-          <div className="field-tree-body" role="tree">
-            {filteredCats.map(cat => {
-              const catIds = cat.fields.map(f => f.id)
-              const checkedCount = catIds.filter(id => categories.find(c => c.fields.find(f => f.id === id && f.checked))).length
-              const allChecked = cat.fields.every(f => f.checked) && cat.fields.length > 0
-              const someChecked = !allChecked && cat.fields.some(f => f.checked)
-              const isExpanded = expandedCats.has(cat.id)
-              return (
-                <div key={cat.id} className="field-tree-category" role="treeitem" aria-expanded={isExpanded}>
-                  <div className="field-tree-cat-row">
-                    <button className="field-tree-expand-btn"
-                      aria-label={isExpanded ? `收起 ${cat.name}` : `展开 ${cat.name}`}
-                      onClick={() => toggleCat(cat.id)}>
-                      <md-icon class="field-tree-expand-icon">
-                        {isExpanded ? 'expand_more' : 'chevron_right'}
-                      </md-icon>
-                    </button>
-                    <label className="field-tree-cat-label">
-                      <input type="checkbox" className="field-tree-checkbox"
-                        checked={allChecked}
-                        ref={el => { if (el) el.indeterminate = someChecked }}
-                        onChange={() => toggleCatAll(cat.id)}
-                        aria-label={`选择 ${cat.name} 下所有字段`} />
-                      <md-icon class="field-cat-icon">{cat.icon}</md-icon>
-                      <span className="md-typescale-label-medium field-cat-name">{cat.name}</span>
-                      <span className="md-typescale-label-small field-cat-count">
-                        {checkedCount}/{cat.fields.length}
-                      </span>
-                    </label>
-                  </div>
-                  {isExpanded && (
-                    <ul className="field-tree-fields" role="group">
-                      {cat.fields.map(field => (
-                        <li key={field.id} className="field-tree-field-row" role="treeitem">
-                          <label className="field-tree-field-label">
-                            <input type="checkbox" className="field-tree-checkbox"
-                              checked={field.checked}
-                              onChange={() => toggleField(cat.id, field.id)}
-                              aria-label={`选择字段 ${field.name}`} />
-                            <span className="viz-field-dot" style={{ background: field.color }} />
-                            <span className="md-typescale-body-small field-name">{field.name}</span>
-                            {field.unit && (
-                              <span className="md-typescale-label-small field-unit">{field.unit}</span>
-                            )}
-                          </label>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-              )
-            })}
-          </div>
-        </aside>
-      )}
-
-      {/* ── 可视化主区域 ── */}
-      <main className="viz-main" id="main-content">
-        {/* 标签页 */}
-        <div className="viz-tabs-bar">
-          <div className="viz-tabs">
-            <button
-              className={`viz-tab${activeChart === 'production' ? ' viz-tab--active' : ''}`}
-              onClick={() => setActiveChart('production')}
-            >
-              <md-icon>show_chart</md-icon>
-              曲线图
-            </button>
-            <button
-              className={`viz-tab${activeChart === 'welllog' ? ' viz-tab--active' : ''}`}
-              onClick={() => setActiveChart('welllog')}
-            >
-              <md-icon>ssid_chart</md-icon>
-              测井剖面图
-            </button>
-            <button
-              className={`viz-tab${activeChart === 'fractable' ? ' viz-tab--active' : ''}`}
-              onClick={() => setActiveChart('fractable')}
-            >
-              <md-icon>table_chart</md-icon>
-              数据表格
-            </button>
-          </div>
-          <div className="viz-tabs-actions">
-            <button className="viz-tool-btn" title="全屏"><md-icon>fullscreen</md-icon></button>
-            <button className="viz-tool-btn" title="截图"><md-icon>photo_camera</md-icon></button>
-            <button className="viz-tool-btn" title="导出数据"><md-icon>download</md-icon></button>
-          </div>
-        </div>
-
-        {/* 图表区 */}
-        <div className="viz-chart-area">
-          {activeChart === 'production' && (
-            <ProductionChart fields={checkedFields} />
-          )}
-          {activeChart === 'welllog' && (
-            <WellLogChart well={selectedWell} onWellChange={setSelectedWell} />
-          )}
-          {activeChart === 'fractable' && (
-            <DataTable well={selectedWell} onWellChange={setSelectedWell} />
-          )}
-        </div>
-      </main>
-    </div>
-  )
-}
-
-// ── 曲线图（由左侧勾选字段驱动，支持压裂施工/地质/工程/生产/测井多类参数叠加）──────
+// ── 曲线图（由勾选字段驱动，支持压裂施工/地质/工程/生产/测井多类参数叠加）──────
 // 支持折线/阶梯切换、框选缩放、鼠标滚轮缩放
-
-function ProductionChart({ fields }: { fields: VizField[] }) {
+export function ProductionChart({ fields }: { fields: VizField[] }) {
   const total = SERIES_DATA.length
   const [stepped, setStepped] = useState(true)
   const [range, setRange] = useState<[number, number]>([0, total - 1])
@@ -577,7 +283,7 @@ function ProductionChart({ fields }: { fields: VizField[] }) {
       <div className="prod-chart-wrap">
         <div className="prod-empty">
           <md-icon>show_chart</md-icon>
-          <p className="prod-empty-title">请在左侧字段列表中勾选要展示的字段</p>
+          <p className="prod-empty-title">请勾选要展示的字段</p>
           <span className="prod-empty-hint">在“压裂施工”分类勾选可查看压裂施工曲线，也支持叠加地质、工程、生产、测井等参数</span>
         </div>
       </div>
@@ -704,18 +410,14 @@ function ProductionChart({ fields }: { fields: VizField[] }) {
 }
 
 // ── Well Log Chart ────────────────────────────────────────────────────────────
-
-function WellLogChart({ well, onWellChange }: { well: string; onWellChange: (w: string) => void }) {
+export function WellLogChart({ well, onWellChange }: { well: string; onWellChange: (w: string) => void }) {
   const depths = LOG_TRACKS[0].data.map(d => d.depth)
   const minDepth = depths[0]
   const maxDepth = depths[depths.length - 1]
-  const CHART_H = 600 // px height of the track area
-  const HEADER_H = 72 // px header per track
-
+  const CHART_H = 600
   const depthToY = (depth: number) =>
     ((depth - minDepth) / (maxDepth - minDepth)) * CHART_H
 
-  // Build SVG polyline points for each track
   const trackPoints = (track: typeof LOG_TRACKS[0], trackW: number) =>
     track.data.map(pt => {
       const x = ((pt.value - Math.min(track.min, track.max)) / Math.abs(track.max - track.min)) * trackW
@@ -730,6 +432,10 @@ function WellLogChart({ well, onWellChange }: { well: string; onWellChange: (w: 
       {/* 顶部控制栏 */}
       <div className="welllog-toolbar">
         <div className="welllog-toolbar-left">
+          <span className="viz-label">井名：</span>
+          <select className="viz-select" value={well} onChange={e => onWellChange(e.target.value)}>
+            {WELL_LIST.map(w => <option key={w.id} value={w.name}>{w.name}</option>)}
+          </select>
           <span className="viz-label">绘图范围：</span>
           <select className="viz-select">
             <option>全井段</option>
@@ -737,10 +443,10 @@ function WellLogChart({ well, onWellChange }: { well: string; onWellChange: (w: 
             <option>3500-4500m</option>
           </select>
           <span className="viz-label">比例尺：</span>
-          <select className="viz-select">
+          <select className="viz-select" defaultValue="1:2000">
             <option>1:500</option>
             <option>1:1000</option>
-            <option selected>1:2000</option>
+            <option>1:2000</option>
           </select>
         </div>
         <div className="welllog-toolbar-right">
@@ -814,7 +520,6 @@ function WellLogChart({ well, onWellChange }: { well: string; onWellChange: (w: 
 }
 
 // ── 通用数据表格（支持多种字段类别）────────────────────────────────────────────
-
 type CellType = 'text' | 'num' | 'mono' | 'tag' | 'status'
 
 interface TableColumn {
@@ -840,12 +545,6 @@ interface TableDataset {
   hasStatus?: boolean
 }
 
-// 确定性随机，保证每次渲染数据一致
-function makeRng(seed: number) {
-  let s = seed
-  return () => { s = (s * 1103515245 + 12345) & 0x7fffffff; return (s % 1000) / 1000 }
-}
-
 // 标签配色
 const TAG_PALETTE = ['#1565c0', '#e65100', '#2e7d32', '#6a1b9a', '#00695c', '#c62828', '#4527a0', '#ad1457']
 const TAG_FIXED: Record<string, string> = {
@@ -862,7 +561,6 @@ function tagColor(v: string): string {
 }
 
 // ── 各类别数据生成 ──
-
 function genFrac(): TableDataset {
   const stages = [
     { name: '前置液', minutes: 18, rate: 6.0, sr: 0 },
@@ -1057,7 +755,7 @@ function genStrata(): TableDataset {
       { label: '分层数', value: rows.length, unit: '层' },
       { label: '解释总厚', value: +thickArr.reduce((s, v) => s + v, 0).toFixed(1), unit: 'm', color: '#1565c0' },
       { label: '最厚层段', value: Math.max(...thickArr), unit: 'm', color: '#2e7d32' },
-      { label: '顶/��深', value: `${rows[0].top}~${rows[rows.length - 1].bottom}`, unit: 'm' },
+      { label: '顶/底深', value: `${rows[0].top}~${rows[rows.length - 1].bottom}`, unit: 'm' },
     ],
   }
 }
@@ -1070,7 +768,7 @@ function fmtNum(v: unknown, decimals?: number): string {
   return decimals != null ? n.toFixed(decimals) : String(n)
 }
 
-function DataTable({ well, onWellChange }: { well: string; onWellChange: (w: string) => void }) {
+export function DataTable({ well, onWellChange }: { well: string; onWellChange: (w: string) => void }) {
   const [datasetId, setDatasetId] = useState<string>('frac')
   const [onlyAbnormal, setOnlyAbnormal] = useState(false)
 
@@ -1162,5 +860,122 @@ function DataTable({ well, onWellChange }: { well: string; onWellChange: (w: str
         </table>
       </div>
     </div>
+  )
+}
+
+// ── 可嵌入的数据可视化面板（曲线图 / 测井剖面图 / 数据表格）──────────────────────────
+// 默认展示曲线图的压裂施工曲线，供四类质检工作台复用
+
+export function QcVisualization() {
+  const [activeChart, setActiveChart] = useState<VizChartType>('production')
+  const [categories, setCategories] = useState<VizFieldCategory[]>(DEFAULT_CATEGORIES)
+  const [selectedWell, setSelectedWell] = useState(WELL_LIST[0].name)
+  const [fieldsOpen, setFieldsOpen] = useState(true)
+
+  const toggleField = (catId: string, fieldId: string) => {
+    setCategories(prev => prev.map(c =>
+      c.id !== catId ? c : { ...c, fields: c.fields.map(f => f.id !== fieldId ? f : { ...f, checked: !f.checked }) }
+    ))
+  }
+  const toggleCatAll = (catId: string) => {
+    setCategories(prev => prev.map(c => {
+      if (c.id !== catId) return c
+      const allChecked = c.fields.every(f => f.checked)
+      return { ...c, fields: c.fields.map(f => ({ ...f, checked: !allChecked })) }
+    }))
+  }
+
+  const checkedFields = categories.flatMap(c => c.fields.filter(f => f.checked))
+
+  const TABS: { key: VizChartType; label: string; icon: string }[] = [
+    { key: 'production', label: '曲线图', icon: 'show_chart' },
+    { key: 'welllog', label: '测井剖面图', icon: 'ssid_chart' },
+    { key: 'fractable', label: '数据表格', icon: 'table_chart' },
+  ]
+
+  return (
+    <section className="qcv-card" aria-label="数据可视化">
+      <div className="qcv-head">
+        <div className="qcv-head-title">
+          <md-icon>insights</md-icon>
+          <span>数据可视化</span>
+        </div>
+        <div className="qcv-tabs" role="tablist">
+          {TABS.map(t => (
+            <button
+              key={t.key}
+              role="tab"
+              aria-selected={activeChart === t.key}
+              className={`qcv-tab${activeChart === t.key ? ' qcv-tab--active' : ''}`}
+              onClick={() => setActiveChart(t.key)}
+            >
+              <md-icon>{t.icon}</md-icon>
+              {t.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="qcv-body">
+        {activeChart === 'production' ? (
+          <div className="qcv-layout">
+            <aside className={`qcv-fields${fieldsOpen ? '' : ' qcv-fields--collapsed'}`} aria-label="字段选择">
+              <div className="qcv-fields-head">
+                <button className="qcv-fields-toggle" onClick={() => setFieldsOpen(v => !v)}
+                  aria-label={fieldsOpen ? '收起字段列表' : '展开字段列表'} title={fieldsOpen ? '收起' : '展开'}>
+                  <md-icon>{fieldsOpen ? 'chevron_left' : 'chevron_right'}</md-icon>
+                </button>
+                {fieldsOpen && <span className="qcv-fields-title">字段（已选 {checkedFields.length}）</span>}
+              </div>
+              {fieldsOpen && (
+                <div className="qcv-fields-body">
+                  {categories.map(cat => {
+                    const allChecked = cat.fields.every(f => f.checked)
+                    const someChecked = !allChecked && cat.fields.some(f => f.checked)
+                    return (
+                      <div key={cat.id} className="qcv-fcat">
+                        <label className="qcv-fcat-label">
+                          <input type="checkbox" checked={allChecked}
+                            ref={el => { if (el) el.indeterminate = someChecked }}
+                            onChange={() => toggleCatAll(cat.id)}
+                            aria-label={`选择 ${cat.name} 下所有字段`} />
+                          <md-icon>{cat.icon}</md-icon>
+                          <span className="qcv-fcat-name">{cat.name}</span>
+                        </label>
+                        <ul className="qcv-flist">
+                          {cat.fields.map(f => (
+                            <li key={f.id}>
+                              <label className="qcv-fitem">
+                                <input type="checkbox" checked={f.checked}
+                                  onChange={() => toggleField(cat.id, f.id)}
+                                  aria-label={`选择字段 ${f.name}`} />
+                                <span className="qcv-fdot" style={{ background: f.color }} />
+                                <span className="qcv-fname">{f.name}</span>
+                                {f.unit && <span className="qcv-funit">{f.unit}</span>}
+                              </label>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </aside>
+            <div className="qcv-chart">
+              <ProductionChart fields={checkedFields} />
+            </div>
+          </div>
+        ) : activeChart === 'welllog' ? (
+          <div className="qcv-chart qcv-chart--full">
+            <WellLogChart well={selectedWell} onWellChange={setSelectedWell} />
+          </div>
+        ) : (
+          <div className="qcv-chart qcv-chart--full">
+            <DataTable well={selectedWell} onWellChange={setSelectedWell} />
+          </div>
+        )}
+      </div>
+    </section>
   )
 }

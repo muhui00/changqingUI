@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import type { QCCardType } from './qc-overview'
 
 type StepStatus = '未执行' | '执行中' | '已完成' | '存在异常' | '待复核' | '执行失败'
@@ -100,6 +100,30 @@ const STEPS: Step[] = [
   },
 ]
 
+// 未执行初始态：全部步骤待执行
+const INITIAL_STEPS: Step[] = STEPS.map((s) => ({
+  ...s,
+  status: '未执行',
+  progress: 0,
+  score: undefined,
+  anomalyCount: 0,
+  reviewCount: 0,
+  lastRun: '—',
+}))
+
+// 质检完成后的最终结果（四步全部执行完毕）
+function buildCompletedSteps(runTime: string): Step[] {
+  return STEPS.map((s) => {
+    if (s.type === 'distribution') {
+      return { ...s, status: '存在异常', progress: 100, score: 83, anomalyCount: 18, reviewCount: 9, lastRun: runTime }
+    }
+    if (s.type === 'correlation') {
+      return { ...s, status: '已完成', progress: 100, score: 79, anomalyCount: 6, reviewCount: 4, lastRun: runTime }
+    }
+    return { ...s, progress: 100, lastRun: runTime }
+  })
+}
+
 const STATUS_STYLE: Record<StepStatus, { color: string; bg: string; icon: string }> = {
   未执行: { color: '#546e7a', bg: '#eceff1', icon: 'radio_button_unchecked' },
   执行中: { color: '#1565c0', bg: '#e3f2fd', icon: 'sync' },
@@ -118,6 +142,9 @@ const TOOL_STATUS_STYLE: Record<ToolStatus, { color: string; dot: string }> = {
 }
 
 interface StepToolsPanelProps {
+  datasetId?: string
+  qced?: boolean
+  onQCComplete?: () => void
   activeStep?: QCCardType | null
   onStepClick?: (type: QCCardType) => void
   onCreateReport?: () => void
@@ -125,16 +152,89 @@ interface StepToolsPanelProps {
   onToggleCollapse?: () => void
 }
 
-export function StepToolsPanel({ activeStep, onStepClick, onCreateReport, collapsed, onToggleCollapse }: StepToolsPanelProps) {
+export function StepToolsPanel({ datasetId, qced = false, onQCComplete, activeStep, onStepClick, onCreateReport, collapsed, onToggleCollapse }: StepToolsPanelProps) {
   const [expandedStep, setExpandedStep] = useState<QCCardType | null>('consistency')
+  const [steps, setSteps] = useState<Step[]>(qced ? buildCompletedSteps('—') : INITIAL_STEPS)
+  const [running, setRunning] = useState(false)
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const runningRef = useRef(false)
+
+  const stopTimer = () => {
+    if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null }
+    runningRef.current = false
+  }
+
+  // 卸载时清理定时器
+  useEffect(() => () => stopTimer(), [])
+
+  // 切换数据集：停止进行中的质检，按该数据集是否已质检重置步骤
+  useEffect(() => {
+    stopTimer()
+    setRunning(false)
+    setSteps(qced ? buildCompletedSteps('—') : INITIAL_STEPS)
+    // 仅在数据集变化时重置（qced 变为 true 由本组件质检完成触发，不应回滚 lastRun）
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [datasetId])
 
   const handleStepClick = (type: QCCardType) => {
     setExpandedStep(expandedStep === type ? null : type)
     onStepClick?.(type)
   }
 
-  const hasRunning = STEPS.some((s) => s.status === '执行中')
-  const allDone = STEPS.every((s) => s.status === '已完成' || s.status === '存在异常' || s.status === '待复核')
+  // 开始 / 重新质检流程 —— 一致性→完整性→分布范围→相关性 依次顺序执行
+  const handleStartQC = () => {
+    if (runningRef.current) return
+    runningRef.current = true
+    stopTimer()
+    runningRef.current = true // stopTimer 会置 false，此处恢复
+    setRunning(true)
+
+    const now = new Date()
+    const runTime = `${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
+    const finals = buildCompletedSteps(runTime)
+    const total = STEPS.length
+
+    // 本地工作副本作为唯一数据源，避免函数式更新器竞态
+    const working: Step[] = INITIAL_STEPS.map((s) => ({ ...s }))
+    working[0] = { ...working[0], status: '执行中', progress: 0, lastRun: '执行中' }
+    setSteps(working.map((s) => ({ ...s })))
+    setExpandedStep(STEPS[0].type)
+
+    let idx = 0
+    let pct = 0
+
+    timerRef.current = setInterval(() => {
+      pct += 10
+      if (pct < 100) {
+        // 当前步骤进度推进
+        working[idx] = { ...working[idx], progress: pct }
+        setSteps(working.map((s) => ({ ...s })))
+        return
+      }
+
+      // 当前步骤完成 → 落定最终结果
+      working[idx] = { ...finals[idx] }
+      idx += 1
+      pct = 0
+
+      if (idx >= total) {
+        // 四步全部完成
+        setSteps(working.map((s) => ({ ...s })))
+        stopTimer()
+        setRunning(false)
+        onQCComplete?.()
+        return
+      }
+
+      // 进入下一步骤
+      working[idx] = { ...working[idx], status: '执行中', progress: 0, lastRun: '执行中' }
+      setSteps(working.map((s) => ({ ...s })))
+      setExpandedStep(STEPS[idx].type)
+    }, 120)
+  }
+
+  const hasRunning = running
+  const allDone = !running && steps.every((s) => s.status === '已完成' || s.status === '存在异常' || s.status === '待复核')
 
   if (collapsed) {
     return (
@@ -170,17 +270,17 @@ export function StepToolsPanel({ activeStep, onStepClick, onCreateReport, collap
           </md-filled-button>
         ) : allDone ? (
           <>
-            <md-outlined-button class="step-start-btn" aria-label="重新执行质检">
+            <md-outlined-button class="step-start-btn" aria-label="重新执行质检" onClick={handleStartQC}>
               <md-icon slot="icon">replay</md-icon>
               重新质检
             </md-outlined-button>
-            <md-filled-button class="step-start-btn step-report-btn" aria-label="创建质控报告" onClick={() => onCreateReport?.()}>
+            <md-filled-button class="step-start-btn step-report-btn" aria-label="创建质检报告" onClick={() => onCreateReport?.()}>
               <md-icon slot="icon">description</md-icon>
               创建报告
             </md-filled-button>
           </>
         ) : (
-          <md-filled-button class="step-start-btn" aria-label="开始质检">
+          <md-filled-button class="step-start-btn" aria-label="开始质检" onClick={handleStartQC}>
             <md-icon slot="icon">play_arrow</md-icon>
             开始质检
           </md-filled-button>
@@ -188,7 +288,7 @@ export function StepToolsPanel({ activeStep, onStepClick, onCreateReport, collap
       </div>
 
       <div className="step-tools-body">
-        {STEPS.map((step) => {
+        {steps.map((step) => {
           const ss = STATUS_STYLE[step.status]
           const isActive = activeStep === step.type
           const isExpanded = expandedStep === step.type
@@ -205,40 +305,42 @@ export function StepToolsPanel({ activeStep, onStepClick, onCreateReport, collap
                 aria-label={`${step.label}，${step.status}，点击${isExpanded ? '收起' : '展开'}工具`}
                 onClick={() => handleStepClick(step.type)}
               >
-                <div className="step-card-left">
-                  <md-icon class="step-type-icon">{step.icon}</md-icon>
-                  <div className="step-card-info">
+                <md-icon class="step-type-icon">{step.icon}</md-icon>
+                <div className="step-card-info">
+                  {/* 第一行：标题 + 分数 + 展开箭头 */}
+                  <div className="step-title-row">
                     <span className="md-typescale-label-medium step-name">{step.label}</span>
-                    <div className="step-meta-row">
-                      <span
-                        className="step-status-chip md-typescale-label-small"
-                        style={{ color: ss.color, background: ss.bg }}
-                      >
-                        <md-icon class="step-status-icon">{ss.icon}</md-icon>
-                        {step.status}
-                      </span>
+                    <div className="step-title-right">
+                      {step.score !== undefined ? (
+                        <span
+                          className="md-typescale-title-small step-score"
+                          style={{
+                            color:
+                              step.score >= 90
+                                ? 'var(--app-color-success)'
+                                : step.score >= 75
+                                ? 'var(--app-color-warning)'
+                                : 'var(--md-sys-color-error)',
+                          }}
+                        >
+                          {step.score}
+                        </span>
+                      ) : (
+                        <span className="md-typescale-label-small step-no-score">—</span>
+                      )}
+                      <md-icon class="step-expand-icon">{isExpanded ? 'expand_less' : 'expand_more'}</md-icon>
                     </div>
                   </div>
-                </div>
-                <div className="step-card-right">
-                  {step.score !== undefined ? (
+                  {/* 第二行（左下）：状态 */}
+                  <div className="step-meta-row">
                     <span
-                      className="md-typescale-title-small step-score"
-                      style={{
-                        color:
-                          step.score >= 90
-                            ? 'var(--app-color-success)'
-                            : step.score >= 75
-                            ? 'var(--app-color-warning)'
-                            : 'var(--md-sys-color-error)',
-                      }}
+                      className="step-status-chip md-typescale-label-small"
+                      style={{ color: ss.color, background: ss.bg }}
                     >
-                      {step.score}
+                      <md-icon class="step-status-icon">{ss.icon}</md-icon>
+                      {step.status}
                     </span>
-                  ) : (
-                    <span className="md-typescale-label-small step-no-score">—</span>
-                  )}
-                  <md-icon class="step-expand-icon">{isExpanded ? 'expand_less' : 'expand_more'}</md-icon>
+                  </div>
                 </div>
               </button>
 

@@ -54,6 +54,26 @@ const SERIES_DATA: Record<string, { well: string; values: number[]; unit: string
     { well: '苏36-12井', values: [0.0023, 0.0025, 0.24, 0.0022, 0.0028, 0.0021, 0.25, 0.0024], unit: 'mD', color: '#d32f2f' },
     { well: '苏36-13井', values: [0.31, 0.33, 0.29, 0.35, 0.32, 0.34, 0.30, 0.33], unit: 'mD', color: '#2e7d32' },
   ],
+  加砂量: [
+    { well: '苏36-11井', values: [82, 85, 88, 84, 86, 83, 87, 85], unit: 'm³', color: '#1565c0' },
+    { well: '苏36-12井', values: [90, 92, 89, 93, 91, 88, 94, 90], unit: 'm³', color: '#2e7d32' },
+    { well: '苏36-14井', values: [85.2, 84, 86, 8520, 85, 87, 83, 86], unit: 'm³', color: '#d32f2f' }, // 量纲异常尖峰
+  ],
+  日产气量: [
+    { well: '苏36-13井', values: [12.5, 12.8, 12.2, 13.1, 12.6, 12.9, 12.4, 12.7], unit: '10⁴m³/d', color: '#d32f2f' },
+    { well: '苏36-11井', values: [11.8, 12.0, 11.6, 12.3, 11.9, 12.1, 11.7, 12.0], unit: '10⁴m³/d', color: '#1565c0' },
+    { well: '苏36-12井', values: [13.2, 13.5, 13.0, 13.8, 13.3, 13.6, 13.1, 13.4], unit: '10⁴m³/d', color: '#2e7d32' },
+  ],
+  气油比: [
+    { well: '苏37-01井', values: [3400, 3420, 3380, 3450, 3410, 3390, 3430, 3405], unit: 'm³/m³', color: '#d32f2f' },
+    { well: '苏36-11井', values: [3200, 3220, 3180, 3250, 3210, 3190, 3230, 3205], unit: 'm³/m³', color: '#1565c0' },
+    { well: '苏36-12井', values: [3600, 3620, 3580, 3650, 3610, 3590, 3630, 3605], unit: 'm³/m³', color: '#2e7d32' },
+  ],
+  油层厚度: [
+    { well: '苏37-02井', values: [12.5, 12.8, 0.012, 13.1, 12.6, 12.9, 0.013, 12.7], unit: 'm', color: '#d32f2f' }, // 量级异常
+    { well: '苏36-11井', values: [15.2, 15.5, 15.0, 15.8, 15.3, 15.6, 15.1, 15.4], unit: 'm', color: '#1565c0' },
+    { well: '苏36-13井', values: [18.0, 18.3, 17.8, 18.6, 18.1, 18.4, 17.9, 18.2], unit: 'm', color: '#2e7d32' },
+  ],
 }
 
 const FIELDS = ['孔隙度', '渗透率', '加砂量', '日产气量', '气油比', '油层厚度']
@@ -222,7 +242,7 @@ function BatchProcessDialog({ open, onClose, records, onConfirm }: {
             {[
               { val: 'convert', label: '单位转换', icon: 'swap_horiz', desc: '按标准换算关系批量转换至目标单位' },
               { val: 'ignore', label: '标记忽略', icon: 'visibility_off', desc: '保留原值，不影响评分，记录操作日志' },
-              { val: 'review', label: '提交复核', icon: 'rate_review', desc: '移入专家复核队列，等待人工确认' },
+              { val: 'review', label: '提交复核', icon: 'rate_review', desc: '移入专��复核队列，等待人工确认' },
             ].map(opt => (
               <label key={opt.val} className={`cs-action-radio${action === opt.val ? ' cs-action-radio--active' : ''}`}>
                 <input type="radio" name="batch-action" value={opt.val} checked={action === opt.val}
@@ -318,9 +338,9 @@ export function ConsistencyWorkspace({ datasetName = '苏里格区块2024年综�
       {/* ── 顶部上下文栏 ── */}
       <div className="cs-topbar">
         <div className="cs-topbar-left">
-          <button className="cs-back-btn" onClick={onBack} aria-label="返回数据质控总览">
+          <button className="cs-back-btn" onClick={onBack} aria-label="返回数据质检总览">
             <md-icon>arrow_back</md-icon>
-            数据质控总览
+            数据质检总览
           </button>
           <span className="cs-topbar-sep">/</span>
           <div className="cs-topbar-dataset">
@@ -399,16 +419,14 @@ export function ConsistencyWorkspace({ datasetName = '苏里格区块2024年综�
 
         </div>
 
-        {/* ── 图件分析区 ── */}
+        {/* ── 数据可视化区 ── */}
         <section className="cs-section">
           <div className="cs-section-header">
             <div className="cs-section-title">
-              <md-icon style={{ fontSize: 16 }}>show_chart</md-icon>
-              多井字段时序对比
+              <md-icon style={{ fontSize: 16 }}>insights</md-icon>
+              数据可视化
             </div>
             <div className="cs-section-header-right">
-              <span className="cs-chart-field-label">当前字段：</span>
-              <span className="cs-chart-field-name">{activeField}</span>
               <div className="cs-chart-legend">
                 {(SERIES_DATA[activeField] ?? SERIES_DATA['孔隙度']).map(s => (
                   <span key={s.well} className="cs-legend-item">
@@ -418,17 +436,51 @@ export function ConsistencyWorkspace({ datasetName = '苏里格区块2024年综�
                 ))}
                 <span className="cs-legend-item cs-legend-item--anomaly">
                   <span className="cs-legend-dot cs-legend-dot--anomaly" />
-                  量级异常点
+                  异常数据点
                 </span>
               </div>
             </div>
           </div>
-          <div className="cs-chart-wrap">
-            <MultiWellChart field={activeField} />
-          </div>
-          <div className="cs-chart-note">
-            <md-icon style={{ fontSize: 13 }}>info</md-icon>
-            虚线表示数据存在量级跳变；红色圆点为自动识别异常位置，可在下方明细中处理。
+
+          <div className="cs-viz-layout">
+            {/* 左侧字段范围（与曲线图联动） */}
+            <aside className="cs-viz-fields" aria-label="字段范围">
+              <div className="cs-viz-fields-title">字段范围</div>
+              <ul className="cs-viz-field-list">
+                {FIELDS.map(f => {
+                  const hasAnomaly = (SERIES_DATA[f] ?? []).some(s =>
+                    s.values.some((v, i) => i > 0 && Math.abs(v / s.values[i - 1] - 1) > 5)
+                  )
+                  return (
+                    <li key={f}>
+                      <button
+                        className={`cs-viz-field-btn${activeField === f ? ' cs-viz-field-btn--active' : ''}`}
+                        onClick={() => setActiveField(f)}
+                        aria-pressed={activeField === f}
+                      >
+                        <span className="cs-viz-field-name">{f}</span>
+                        {hasAnomaly && (
+                          <span className="cs-viz-field-flag" title="存在异常数据点">
+                            <md-icon style={{ fontSize: 13 }}>error</md-icon>
+                          </span>
+                        )}
+                      </button>
+                    </li>
+                  )
+                })}
+              </ul>
+            </aside>
+
+            {/* 右侧曲线图 */}
+            <div className="cs-viz-chart">
+              <div className="cs-chart-wrap">
+                <MultiWellChart field={activeField} />
+              </div>
+              <div className="cs-chart-note">
+                <md-icon style={{ fontSize: 13 }}>info</md-icon>
+                曲线图字段与左侧字段范围联动；红色圆点为自动识别的异常数据点，可在下方明细中处理。
+              </div>
+            </div>
           </div>
         </section>
 
@@ -542,7 +594,6 @@ export function ConsistencyWorkspace({ datasetName = '苏里格区块2024年综�
             </table>
           </div>
         </section>
-
 
       </div>
 
