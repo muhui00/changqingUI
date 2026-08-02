@@ -150,7 +150,11 @@ export function WeightedScoring() {
   const [autoTrial, setAutoTrial] = useState(true)
   const [calcVersion, setCalcVersion] = useState<'enabled' | 'draft' | 'compare'>('draft')
 
-  const selected = SCHEMES.find(s => s.id === selectedId) ?? SCHEMES[0]
+  // 模板列表（可新增/复制）
+  const [schemes, setSchemes] = useState<Scheme[]>(SCHEMES)
+  const [newOpen, setNewOpen] = useState(false)
+
+  const selected = schemes.find(s => s.id === selectedId) ?? schemes[0]
 
   // 可编辑草稿：四维配置
   const [dims, setDims] = useState<DimConfig[]>(() => DIM_META.map((m, i) => ({
@@ -208,6 +212,38 @@ export function WeightedScoring() {
     setDims(prev => prev.map(d => d.key === key ? { ...d, weight: d.recommended } : d))
   }
 
+  // 新建模板
+  const handleCreateScheme = (data: { name: string; code: string; scene: string; owner: string; preset: [number, number, number, number] }) => {
+    const id = `s${Date.now()}`
+    const [c, cp, di, co] = data.preset
+    const newScheme: Scheme = {
+      id, name: data.name, code: data.code, version: 'V0.1', status: '草稿',
+      scene: data.scene, owner: data.owner, updatedAt: new Date().toISOString().slice(0, 16).replace('T', ' '),
+      templateRefs: 0, taskRefs: 0,
+      dims: { consistency: c, completeness: cp, distribution: di, correlation: co },
+    }
+    setSchemes(prev => [newScheme, ...prev])
+    setSelectedId(id)
+    setDims(prev => prev.map(d => ({ ...d, weight: newScheme.dims[d.key], trialScore: TRIAL_SCORE[d.key], enabled: true })))
+    setLockedDims(new Set())
+    setConfigTab('basic')
+    setNewOpen(false)
+  }
+
+  // 复制当前模板为新草稿
+  const handleCopyScheme = () => {
+    const id = `s${Date.now()}`
+    const copy: Scheme = {
+      ...selected, id, name: `${selected.name}（副本）`, code: `${selected.code}_COPY`,
+      version: 'V0.1', status: '草稿', templateRefs: 0, taskRefs: 0, conflict: false,
+      updatedAt: new Date().toISOString().slice(0, 16).replace('T', ' '),
+      dims: { ...selected.dims },
+    }
+    setSchemes(prev => [copy, ...prev])
+    setSelectedId(id)
+    setConfigTab('basic')
+  }
+
   // ── 综合评分 ──
   const contributions = dims.map(d => ({ ...d, contribution: d.enabled ? (d.trialScore * d.weight) / 100 : 0 }))
   const compositeRaw = contributions.reduce((s, d) => s + d.contribution, 0)
@@ -233,12 +269,12 @@ export function WeightedScoring() {
     label: d.label, score: Math.round(d.trialScore), anomalyCount: 0, reviewedCount: 0,
   }))
 
-  const filtered = useMemo(() => SCHEMES.filter(s =>
+  const filtered = useMemo(() => schemes.filter(s =>
     (search === '' || s.name.includes(search) || s.code.toLowerCase().includes(search.toLowerCase())) &&
     (fStatus === '全部状态' || s.status === fStatus) &&
     (fScene === '全部场景' || s.scene.includes(fScene.replace('全部场景', ''))) &&
     (!onlyMine || s.owner === '王玉慧'),
-  ), [search, fStatus, fScene, onlyMine])
+  ), [schemes, search, fStatus, fScene, onlyMine])
 
   const ruleWeightTotal = RULE_SCORES[ruleDim].reduce((s, r) => s + r.weight, 0)
 
@@ -256,8 +292,8 @@ export function WeightedScoring() {
             <p className="md-typescale-body-medium sc-page-subtitle">配置四维质量权重、评分等级与业务门槛，并通过真实任务结果进行试算</p>
           </div>
           <div className="sc-header-actions">
-            <button className="lib-btn lib-btn--ghost"><md-icon>add</md-icon>新建模板</button>
-            <button className="lib-btn lib-btn--ghost"><md-icon>content_copy</md-icon>复制模板</button>
+            <button className="lib-btn lib-btn--ghost" onClick={() => setNewOpen(true)}><md-icon>add</md-icon>新建模板</button>
+            <button className="lib-btn lib-btn--ghost" onClick={handleCopyScheme}><md-icon>content_copy</md-icon>复制模板</button>
             <button className="lib-btn lib-btn--ghost"><md-icon>history</md-icon>查看版本</button>
             <button className="lib-btn lib-btn--ghost"><md-icon>save</md-icon>保存草稿</button>
             <button className="lib-btn lib-btn--primary" disabled={!weightValid}><md-icon>calculate</md-icon>试算</button>
@@ -756,6 +792,93 @@ export function WeightedScoring() {
             ))}
           </div>
         </aside>
+      </div>
+
+      {newOpen && (
+        <NewTemplateDialog
+          onClose={() => setNewOpen(false)}
+          onCreate={handleCreateScheme}
+        />
+      )}
+    </div>
+  )
+}
+
+// ─── 新建模板弹窗 ─────────────────────────────────────────────────────────────
+function NewTemplateDialog({ onClose, onCreate }: {
+  onClose: () => void
+  onCreate: (data: { name: string; code: string; scene: string; owner: string; preset: [number, number, number, number] }) => void
+}) {
+  const [name, setName] = useState('')
+  const [code, setCode] = useState('')
+  const [gasType, setGasType] = useState('致密气')
+  const [dataScope, setDataScope] = useState('全数据类型')
+  const [owner, setOwner] = useState('王玉慧')
+  const [presetIdx, setPresetIdx] = useState(3)
+
+  const scene = `陆地 / ${gasType} / ${dataScope}`
+  const valid = name.trim() !== '' && code.trim() !== ''
+
+  const submit = () => {
+    if (!valid) return
+    onCreate({ name: name.trim(), code: code.trim().toUpperCase(), scene, owner, preset: PRESETS[presetIdx].w })
+  }
+
+  return (
+    <div className="cs-overlay" onClick={onClose}>
+      <div className="cs-dialog" onClick={e => e.stopPropagation()} role="dialog" aria-modal="true" aria-label="新建评分模板">
+        <div className="cs-dialog-header">
+          <span className="md-typescale-title-medium">新建评分模板</span>
+          <button className="sc-icon-btn" onClick={onClose} aria-label="关闭"><md-icon>close</md-icon></button>
+        </div>
+        <div className="cs-dialog-body">
+          <div className="sc-field">
+            <label className="sc-label">模板名称<span className="sc-req">*</span></label>
+            <input className="sc-input" value={name} onChange={e => setName(e.target.value)} placeholder="如：致密气综合质控评分" autoFocus />
+          </div>
+          <div className="sc-field">
+            <label className="sc-label">模板编码<span className="sc-req">*</span></label>
+            <input className="sc-input sc-input--mono" value={code} onChange={e => setCode(e.target.value)} placeholder="如：SCORE_TIGHT_GAS" />
+            <span className="sc-hint">建议使用大写字母与下划线，创建后可修改直至启用</span>
+          </div>
+          <div className="sc-form-grid" style={{ gridTemplateColumns: '1fr 1fr' }}>
+            <div className="sc-field">
+              <label className="sc-label">适用气藏类型</label>
+              <select className="sc-select" value={gasType} onChange={e => setGasType(e.target.value)}>
+                <option>致密气</option><option>页岩气</option><option>煤层气</option><option>常规气</option>
+              </select>
+            </div>
+            <div className="sc-field">
+              <label className="sc-label">适用数据范围</label>
+              <select className="sc-select" value={dataScope} onChange={e => setDataScope(e.target.value)}>
+                <option>全数据类型</option><option>基础数据集</option><option>综合数据集</option><option>生产数据集</option>
+              </select>
+            </div>
+            <div className="sc-field">
+              <label className="sc-label">模板责任人</label>
+              <select className="sc-select" value={owner} onChange={e => setOwner(e.target.value)}>
+                <option>王玉慧</option><option>张工</option><option>李工</option><option>赵工</option>
+              </select>
+            </div>
+            <div className="sc-field">
+              <label className="sc-label">初始权重预设</label>
+              <select className="sc-select" value={presetIdx} onChange={e => setPresetIdx(Number(e.target.value))}>
+                {PRESETS.map((p, i) => <option key={p.name} value={i}>{p.name}（{p.w.join('/')}）</option>)}
+              </select>
+            </div>
+          </div>
+          <div className="sc-field">
+            <label className="sc-label">生成的适用场景</label>
+            <input className="sc-input" value={scene} disabled />
+          </div>
+          <p className="sc-note"><md-icon>info</md-icon>新模板将以“草稿”状态创建，权重、维度评分与门槛可在右侧继续配置后再提交启用。</p>
+        </div>
+        <div className="cs-dialog-footer">
+          <button className="lib-btn lib-btn--ghost" onClick={onClose}>取消</button>
+          <button className="lib-btn lib-btn--primary" onClick={submit} disabled={!valid}>
+            <md-icon>add</md-icon>创建模板
+          </button>
+        </div>
       </div>
     </div>
   )
