@@ -4,16 +4,17 @@ import { useState } from 'react'
 
 interface TopNavProps {
   currentDataset?: string
-  activePage?: 'overview' | 'report-center' | 'report-preview' | 'sample-management' | 'visualization' | 'field-standard' | 'qc-rule'
+  activePage?: 'overview' | 'report-center' | 'report-preview' | 'sample-management' | 'visualization' | 'field-standard' | 'qc-rule' | 'weighted-scoring'
   onNavOverview?: () => void
   onNavReportCenter?: () => void
   onNavSampleManagement?: () => void
   onNavVisualization?: () => void
   onNavFieldStandard?: () => void
   onNavQCRule?: () => void
+  onNavWeightedScoring?: () => void
 }
 
-export function TopNav({ currentDataset, activePage = 'overview', onNavOverview, onNavReportCenter, onNavSampleManagement, onNavVisualization, onNavFieldStandard, onNavQCRule }: TopNavProps) {
+export function TopNav({ currentDataset, activePage = 'overview', onNavOverview, onNavReportCenter, onNavSampleManagement, onNavVisualization, onNavFieldStandard, onNavQCRule, onNavWeightedScoring }: TopNavProps) {
   const [achieveMenuOpen, setAchieveMenuOpen] = useState(false)
   const [configMenuOpen, setConfigMenuOpen] = useState(false)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
@@ -84,7 +85,7 @@ export function TopNav({ currentDataset, activePage = 'overview', onNavOverview,
         {/* 质控配置下拉 */}
         <div className="top-nav-dropdown-wrap" style={{ position: 'relative' }}>
           <button
-            className={`top-nav-link${activePage === 'field-standard' || activePage === 'qc-rule' ? ' top-nav-link--active' : ''}`}
+            className={`top-nav-link${activePage === 'field-standard' || activePage === 'qc-rule' || activePage === 'weighted-scoring' ? ' top-nav-link--active' : ''}`}
             id="config-btn"
             aria-haspopup="menu"
             aria-expanded={configMenuOpen}
@@ -107,7 +108,7 @@ export function TopNav({ currentDataset, activePage = 'overview', onNavOverview,
               <md-icon slot="start">rule</md-icon>
               <div slot="headline">质控规则库</div>
             </md-menu-item>
-            <md-menu-item>
+            <md-menu-item onClick={() => { setConfigMenuOpen(false); onNavWeightedScoring?.() }}>
               <md-icon slot="start">assessment</md-icon>
               <div slot="headline">综合加权评分</div>
             </md-menu-item>

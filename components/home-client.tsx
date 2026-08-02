@@ -16,8 +16,9 @@ import { SampleManagement } from './sample-management'
 import { VisualizationPage } from './visualization-page'
 import { FieldStandardLibrary } from './field-standard-library'
 import { QCRuleLibrary } from './qc-rule-library'
+import { WeightedScoring } from './weighted-scoring'
 
-type AppPage = 'overview' | 'report-center' | 'report-preview' | 'qc-workspace' | 'sample-management' | 'visualization' | 'field-standard' | 'qc-rule'
+type AppPage = 'overview' | 'report-center' | 'report-preview' | 'qc-workspace' | 'sample-management' | 'visualization' | 'field-standard' | 'qc-rule' | 'weighted-scoring'
 
 export function HomeClient() {
   const [datasets, setDatasets] = useState<Dataset[]>(MOCK_DATASETS)
@@ -55,6 +56,7 @@ export function HomeClient() {
   const handleNavToVisualization = () => setPage('visualization')
   const handleNavToFieldStandard = () => setPage('field-standard')
   const handleNavToQCRule = () => setPage('qc-rule')
+  const handleNavToWeightedScoring = () => setPage('weighted-scoring')
 
   const handlePreviewReport = (id: string) => {
     setPreviewReportId(id)
@@ -76,7 +78,8 @@ export function HomeClient() {
           onNavOverview={handleNavToOverview} onNavReportCenter={handleNavToReportCenter}
           onNavSampleManagement={handleNavToSampleManagement}
           onNavVisualization={handleNavToVisualization}
-          onNavFieldStandard={handleNavToFieldStandard} onNavQCRule={handleNavToQCRule} />
+          onNavFieldStandard={handleNavToFieldStandard} onNavQCRule={handleNavToQCRule}
+          onNavWeightedScoring={handleNavToWeightedScoring} />
         <div className="workspace" style={{ overflow: 'hidden' }}>
           <VisualizationPage onBack={handleNavToOverview} />
         </div>
@@ -91,7 +94,8 @@ export function HomeClient() {
         <TopNav activePage="field-standard"
           onNavOverview={handleNavToOverview} onNavReportCenter={handleNavToReportCenter}
           onNavSampleManagement={handleNavToSampleManagement} onNavVisualization={handleNavToVisualization}
-          onNavFieldStandard={handleNavToFieldStandard} onNavQCRule={handleNavToQCRule} />
+          onNavFieldStandard={handleNavToFieldStandard} onNavQCRule={handleNavToQCRule}
+          onNavWeightedScoring={handleNavToWeightedScoring} />
         <div className="rc-page-shell">
           <FieldStandardLibrary />
         </div>
@@ -106,9 +110,26 @@ export function HomeClient() {
         <TopNav activePage="qc-rule"
           onNavOverview={handleNavToOverview} onNavReportCenter={handleNavToReportCenter}
           onNavSampleManagement={handleNavToSampleManagement} onNavVisualization={handleNavToVisualization}
-          onNavFieldStandard={handleNavToFieldStandard} onNavQCRule={handleNavToQCRule} />
+          onNavFieldStandard={handleNavToFieldStandard} onNavQCRule={handleNavToQCRule}
+          onNavWeightedScoring={handleNavToWeightedScoring} />
         <div className="rc-page-shell">
           <QCRuleLibrary />
+        </div>
+      </div>
+    )
+  }
+
+  // ── 综合加权评分 ──
+  if (page === 'weighted-scoring') {
+    return (
+      <div className="app-shell">
+        <TopNav activePage="weighted-scoring"
+          onNavOverview={handleNavToOverview} onNavReportCenter={handleNavToReportCenter}
+          onNavSampleManagement={handleNavToSampleManagement} onNavVisualization={handleNavToVisualization}
+          onNavFieldStandard={handleNavToFieldStandard} onNavQCRule={handleNavToQCRule}
+          onNavWeightedScoring={handleNavToWeightedScoring} />
+        <div className="workspace" style={{ overflow: 'hidden' }}>
+          <WeightedScoring />
         </div>
       </div>
     )
@@ -121,7 +142,8 @@ export function HomeClient() {
         <TopNav currentDataset="苏里格区块2024年综合数据集" activePage="sample-management"
           onNavOverview={handleNavToOverview} onNavReportCenter={handleNavToReportCenter}
           onNavSampleManagement={handleNavToSampleManagement} onNavVisualization={handleNavToVisualization}
-          onNavFieldStandard={handleNavToFieldStandard} onNavQCRule={handleNavToQCRule} />
+          onNavFieldStandard={handleNavToFieldStandard} onNavQCRule={handleNavToQCRule}
+          onNavWeightedScoring={handleNavToWeightedScoring} />
         <div className="rc-page-shell">
           <SampleManagement onBack={handleNavToOverview} />
         </div>
@@ -136,7 +158,8 @@ export function HomeClient() {
         <TopNav currentDataset="苏里格区块2024年综合数据集" activePage="report-center"
           onNavOverview={handleNavToOverview} onNavReportCenter={handleNavToReportCenter}
           onNavSampleManagement={handleNavToSampleManagement} onNavVisualization={handleNavToVisualization}
-          onNavFieldStandard={handleNavToFieldStandard} onNavQCRule={handleNavToQCRule} />
+          onNavFieldStandard={handleNavToFieldStandard} onNavQCRule={handleNavToQCRule}
+          onNavWeightedScoring={handleNavToWeightedScoring} />
         <div className="rc-page-shell">
           <ReportCenter onPreview={handlePreviewReport} />
         </div>
@@ -151,7 +174,8 @@ export function HomeClient() {
         <TopNav currentDataset="苏里格区块2024年综合数据集" activePage="report-preview"
           onNavOverview={handleNavToOverview} onNavReportCenter={handleNavToReportCenter}
           onNavSampleManagement={handleNavToSampleManagement} onNavVisualization={handleNavToVisualization}
-          onNavFieldStandard={handleNavToFieldStandard} onNavQCRule={handleNavToQCRule} />
+          onNavFieldStandard={handleNavToFieldStandard} onNavQCRule={handleNavToQCRule}
+          onNavWeightedScoring={handleNavToWeightedScoring} />
         <ReportPreview reportId={previewReportId} onBack={handleBackToReportCenter} />
       </div>
     )
@@ -164,7 +188,8 @@ export function HomeClient() {
         <TopNav currentDataset="苏里格区块2024年综合数据集" activePage="overview"
           onNavOverview={handleNavToOverview} onNavReportCenter={handleNavToReportCenter}
           onNavSampleManagement={handleNavToSampleManagement} onNavVisualization={handleNavToVisualization}
-          onNavFieldStandard={handleNavToFieldStandard} onNavQCRule={handleNavToQCRule} />
+          onNavFieldStandard={handleNavToFieldStandard} onNavQCRule={handleNavToQCRule}
+          onNavWeightedScoring={handleNavToWeightedScoring} />
         <div className="workspace">
           <DatasetList datasets={datasets} onDatasetsChange={setDatasets}
             selectedId={selectedDatasetId} onSelect={setSelectedDatasetId}
@@ -209,7 +234,8 @@ export function HomeClient() {
       <TopNav currentDataset="苏里格区块2024年综合数据集" activePage="overview"
         onNavOverview={handleNavToOverview} onNavReportCenter={handleNavToReportCenter}
         onNavSampleManagement={handleNavToSampleManagement} onNavVisualization={handleNavToVisualization}
-          onNavFieldStandard={handleNavToFieldStandard} onNavQCRule={handleNavToQCRule} />
+          onNavFieldStandard={handleNavToFieldStandard} onNavQCRule={handleNavToQCRule}
+          onNavWeightedScoring={handleNavToWeightedScoring} />
       <div className="workspace">
         <DatasetList datasets={datasets} onDatasetsChange={setDatasets}
           selectedId={selectedDatasetId} onSelect={setSelectedDatasetId}
