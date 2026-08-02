@@ -83,8 +83,9 @@ export function DatasetList({ selectedId, onSelect, collapsed, onToggleCollapse,
   const [filterStatus, setFilterStatus] = useState<DatasetStatus | '全部'>('全部')
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [datasets, setDatasets] = useState<Dataset[]>(MOCK_DATASETS)
 
-  const filtered = MOCK_DATASETS.filter((d) => {
+  const filtered = datasets.filter((d) => {
     const matchSearch = d.name.includes(search)
     const matchStatus = filterStatus === '全部' || d.status === filterStatus
     return matchSearch && matchStatus
@@ -141,8 +142,21 @@ export function DatasetList({ selectedId, onSelect, collapsed, onToggleCollapse,
       <NewDatasetDialog
         open={dialogOpen}
         onClose={() => setDialogOpen(false)}
-        onConfirm={(_name, _items) => {
+        onConfirm={(name) => {
           setDialogOpen(false)
+          // 1. 列表自动新增新数据集（初始化中）
+          const newId = `ds-${Date.now()}`
+          const newDataset: Dataset = {
+            id: newId,
+            name,
+            version: 'v1.0',
+            status: '初始化中',
+            updatedAt: new Date().toISOString().slice(0, 10),
+          }
+          setDatasets((prev) => [newDataset, ...prev])
+          onSelect(newId)
+          // 2. 新建后数据集列表自动收起
+          if (!collapsed) onToggleCollapse()
         }}
       />
 

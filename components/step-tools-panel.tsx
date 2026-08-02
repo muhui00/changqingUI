@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import type { QCCardType } from './qc-overview'
 
 type StepStatus = '未执行' | '执行中' | '已完成' | '存在异常' | '待复核' | '执行失败'
@@ -100,6 +100,30 @@ const STEPS: Step[] = [
   },
 ]
 
+// 未执行初始态：全部步骤待执行
+const INITIAL_STEPS: Step[] = STEPS.map((s) => ({
+  ...s,
+  status: '未执行',
+  progress: 0,
+  score: undefined,
+  anomalyCount: 0,
+  reviewCount: 0,
+  lastRun: '—',
+}))
+
+// 质检完成后的最终结果（四步全部执行完毕）
+function buildCompletedSteps(runTime: string): Step[] {
+  return STEPS.map((s) => {
+    if (s.type === 'distribution') {
+      return { ...s, status: '存在异常', progress: 100, score: 83, anomalyCount: 18, reviewCount: 9, lastRun: runTime }
+    }
+    if (s.type === 'correlation') {
+      return { ...s, status: '已完成', progress: 100, score: 79, anomalyCount: 6, reviewCount: 4, lastRun: runTime }
+    }
+    return { ...s, progress: 100, lastRun: runTime }
+  })
+}
+
 const STATUS_STYLE: Record<StepStatus, { color: string; bg: string; icon: string }> = {
   未执行: { color: '#546e7a', bg: '#eceff1', icon: 'radio_button_unchecked' },
   执行中: { color: '#1565c0', bg: '#e3f2fd', icon: 'sync' },
@@ -127,14 +151,44 @@ interface StepToolsPanelProps {
 
 export function StepToolsPanel({ activeStep, onStepClick, onCreateReport, collapsed, onToggleCollapse }: StepToolsPanelProps) {
   const [expandedStep, setExpandedStep] = useState<QCCardType | null>('consistency')
+  const [steps, setSteps] = useState<Step[]>(INITIAL_STEPS)
+  const [running, setRunning] = useState(false)
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  // 卸载时清理定时器
+  useEffect(() => () => { if (timerRef.current) clearInterval(timerRef.current) }, [])
 
   const handleStepClick = (type: QCCardType) => {
     setExpandedStep(expandedStep === type ? null : type)
     onStepClick?.(type)
   }
 
-  const hasRunning = STEPS.some((s) => s.status === '执行中')
-  const allDone = STEPS.every((s) => s.status === '已完成' || s.status === '存在异常' || s.status === '待复核')
+  // 开始 / 重新质检流程
+  const handleStartQC = () => {
+    if (running) return
+    setRunning(true)
+    // 所有步骤置为执行中、进度归零
+    setSteps(STEPS.map((s) => ({
+      ...s, status: '执行中', progress: 0, score: undefined, anomalyCount: 0, reviewCount: 0, lastRun: '执行中',
+    })))
+    let pct = 0
+    timerRef.current = setInterval(() => {
+      pct += 5
+      if (pct >= 100) {
+        if (timerRef.current) clearInterval(timerRef.current)
+        timerRef.current = null
+        const now = new Date()
+        const runTime = `${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
+        setSteps(buildCompletedSteps(runTime))
+        setRunning(false)
+      } else {
+        setSteps((prev) => prev.map((s) => ({ ...s, progress: pct })))
+      }
+    }, 150)
+  }
+
+  const hasRunning = running
+  const allDone = !running && steps.every((s) => s.status === '已完成' || s.status === '存在异常' || s.status === '待复核')
 
   if (collapsed) {
     return (
@@ -170,7 +224,7 @@ export function StepToolsPanel({ activeStep, onStepClick, onCreateReport, collap
           </md-filled-button>
         ) : allDone ? (
           <>
-            <md-outlined-button class="step-start-btn" aria-label="重新执行质检">
+            <md-outlined-button class="step-start-btn" aria-label="重新执行质检" onClick={handleStartQC}>
               <md-icon slot="icon">replay</md-icon>
               重新质检
             </md-outlined-button>
@@ -180,7 +234,7 @@ export function StepToolsPanel({ activeStep, onStepClick, onCreateReport, collap
             </md-filled-button>
           </>
         ) : (
-          <md-filled-button class="step-start-btn" aria-label="开始质检">
+          <md-filled-button class="step-start-btn" aria-label="开始质检" onClick={handleStartQC}>
             <md-icon slot="icon">play_arrow</md-icon>
             开始质检
           </md-filled-button>
@@ -188,7 +242,7 @@ export function StepToolsPanel({ activeStep, onStepClick, onCreateReport, collap
       </div>
 
       <div className="step-tools-body">
-        {STEPS.map((step) => {
+        {steps.map((step) => {
           const ss = STATUS_STYLE[step.status]
           const isActive = activeStep === step.type
           const isExpanded = expandedStep === step.type

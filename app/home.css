@@ -1025,7 +1025,7 @@
 
 /* ===== Step Tools Panel ===== */
 .step-tools-panel {
-  width: 300px;
+  width: 200px;
   border-right: none;
   border-left: 1px solid var(--md-sys-color-outline-variant);
   flex-shrink: 0;
@@ -1802,7 +1802,7 @@
     width: 200px;
   }
   .step-tools-panel {
-    width: 280px;
+    width: 187px;
   }
   .qc-cards-grid {
     grid-template-columns: repeat(2, 1fr);
@@ -1848,7 +1848,7 @@
 
   .dataset-list-panel  { width: 280px; }
   .field-tree-panel    { width: 260px; }
-  .step-tools-panel    { width: 340px; }
+  .step-tools-panel    { width: 227px; }
 
   .panel-header { padding: 12px 14px 10px; }
   .panel-title  { font-size: 13px; }
@@ -1887,7 +1887,7 @@
 
   .dataset-list-panel  { width: 320px; }
   .field-tree-panel    { width: 300px; }
-  .step-tools-panel    { width: 400px; }
+  .step-tools-panel    { width: 267px; }
 
   .panel-header { padding: 14px 16px 12px; }
   .panel-title  { font-size: 14px; }
@@ -2400,7 +2400,7 @@
   outline: none;
 }
 
-/* ── ���������型 & 状态标签 ── */
+/* ── �����������型 & 状态标签 ── */
 .rc-type-badge {
   display: inline-flex;
   align-items: center;
