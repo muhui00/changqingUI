@@ -165,7 +165,7 @@ export function WeightedScoring() {
   })))
   const [lockedDims, setLockedDims] = useState<Set<DimKey>>(new Set())
 
-  // 选择方案时载入其权重摘要
+  // 选择方案时��入其权重摘要
   const handleSelectScheme = (s: Scheme) => {
     setSelectedId(s.id)
     setDims(prev => prev.map(d => ({ ...d, weight: s.dims[d.key], trialScore: TRIAL_SCORE[d.key], enabled: true })))
@@ -256,29 +256,28 @@ export function WeightedScoring() {
             <p className="md-typescale-body-medium sc-page-subtitle">配置四维质量权重、评分等级与业务门槛，并通过真实任务结果进行试算</p>
           </div>
           <div className="sc-header-actions">
-            <button className="lib-btn lib-btn--ghost"><md-icon>add</md-icon>新建方案</button>
-            <button className="lib-btn lib-btn--ghost"><md-icon>content_copy</md-icon>复制方案</button>
+            <button className="lib-btn lib-btn--ghost"><md-icon>add</md-icon>新建模板</button>
+            <button className="lib-btn lib-btn--ghost"><md-icon>content_copy</md-icon>复制模板</button>
             <button className="lib-btn lib-btn--ghost"><md-icon>history</md-icon>查看版本</button>
             <button className="lib-btn lib-btn--ghost"><md-icon>save</md-icon>保存草稿</button>
-            <button className="lib-btn lib-btn--ghost"><md-icon>calculate</md-icon>试算</button>
-            <button className="lib-btn lib-btn--primary" disabled={!weightValid}><md-icon>send</md-icon>提交审核</button>
+            <button className="lib-btn lib-btn--primary" disabled={!weightValid}><md-icon>calculate</md-icon>试算</button>
           </div>
         </div>
       </div>
 
       {/* 三栏工作台 */}
       <div className="sc-cols">
-        {/* ── A 区：评分方案区 ── */}
-        <aside className="sc-scheme-panel" aria-label="评分方案区">
+        {/* ── A 区：评分模板区 ── */}
+        <aside className="sc-scheme-panel" aria-label="评分模板区">
           <div className="sc-panel-head">
-            <span className="sc-panel-title">评分方案</span>
+            <span className="sc-panel-title">评分模板</span>
             <span className="sc-panel-count">{filtered.length}</span>
           </div>
           <div className="sc-scheme-filters">
             <div className="lib-search-wrap sc-search">
               <md-icon>search</md-icon>
-              <input className="lib-search-input" placeholder="搜索方案名称、编码..." value={search}
-                onChange={e => setSearch(e.target.value)} aria-label="搜索方案" />
+              <input className="lib-search-input" placeholder="搜索模板名称、编码..." value={search}
+                onChange={e => setSearch(e.target.value)} aria-label="搜索模板" />
             </div>
             <div className="sc-filter-row">
               <select className="lib-filter-select sc-filter-sm" value={fStatus}
@@ -319,7 +318,7 @@ export function WeightedScoring() {
                         {s.dims[m.key]}
                       </span>
                     ))}
-                    <span className="sc-scheme-refs">模板 {s.templateRefs} · 任务 {s.taskRefs}</span>
+                    <span className="sc-scheme-refs">引用 {s.templateRefs} · 任务 {s.taskRefs}</span>
                   </div>
                   {s.conflict && <div className="sc-conflict-tag"><md-icon>warning</md-icon>场景冲突</div>}
                   <div className="sc-scheme-meta">{s.updatedAt} · {s.owner}</div>
@@ -327,7 +326,7 @@ export function WeightedScoring() {
               </li>
             ))}
             {filtered.length === 0 && (
-              <li className="sc-empty"><md-icon>search_off</md-icon>未找到符合条件的方案</li>
+              <li className="sc-empty"><md-icon>search_off</md-icon>未找到符合条件的模板</li>
             )}
           </ul>
         </aside>
@@ -355,16 +354,16 @@ export function WeightedScoring() {
               <div className="sc-tab-panel">
                 <div className="sc-section-title"><span className="sc-bar sc-bar--primary" />基础信息</div>
                 <div className="sc-form-grid">
-                  <div className="sc-field"><label className="sc-label">方案名称<span className="sc-req">*</span></label>
+                  <div className="sc-field"><label className="sc-label">模板名称<span className="sc-req">*</span></label>
                     <input className="sc-input" defaultValue={selected.name} /></div>
-                  <div className="sc-field"><label className="sc-label">方案编码<span className="sc-req">*</span></label>
+                  <div className="sc-field"><label className="sc-label">模板编码<span className="sc-req">*</span></label>
                     <input className="sc-input sc-input--mono" defaultValue={selected.code} disabled={selected.status === '启用'} />
                     {selected.status === '启用' && <span className="sc-hint">启用后编码不可修改</span>}</div>
-                  <div className="sc-field"><label className="sc-label">方案版本</label>
+                  <div className="sc-field"><label className="sc-label">模板版本</label>
                     <input className="sc-input" defaultValue={selected.version} disabled /></div>
-                  <div className="sc-field"><label className="sc-label">方案责任人<span className="sc-req">*</span></label>
+                  <div className="sc-field"><label className="sc-label">模板责任人<span className="sc-req">*</span></label>
                     <select className="sc-select" defaultValue={selected.owner}><option>王玉慧</option><option>张工</option><option>李工</option><option>赵工</option></select></div>
-                  <div className="sc-field sc-field--full"><label className="sc-label">方案说明<span className="sc-req">*</span></label>
+                  <div className="sc-field sc-field--full"><label className="sc-label">模板说明<span className="sc-req">*</span></label>
                     <textarea className="sc-textarea" rows={2} defaultValue="用于致密气综合数据集的统一质量评分口径，覆盖一致性、完整性、分布范围与相关性四个维度。" /></div>
                 </div>
 
@@ -380,12 +379,12 @@ export function WeightedScoring() {
                     <select className="sc-select"><option>全部井型</option><option>水平井</option><option>直井</option></select></div>
                   <div className="sc-field"><label className="sc-label">生效日期</label>
                     <input className="sc-input" defaultValue="长期" /></div>
-                  <div className="sc-field"><label className="sc-label">方案优先级</label>
+                  <div className="sc-field"><label className="sc-label">模板优先级</label>
                     <input className="sc-input" type="number" defaultValue={100} /></div>
                 </div>
                 <label className="sc-switch-row">
                   <span className="sc-switch"><input type="checkbox" /><span className="sc-switch-thumb" /></span>
-                  设为默认方案（未命中专用方案时使用）
+                  设为默认模板（未命中专用模板时使用）
                 </label>
               </div>
             )}
@@ -688,7 +687,7 @@ export function WeightedScoring() {
                 <span className="sc-score-stat-value">{recordCoverage}%</span>
               </div>
               <div className="sc-score-stat">
-                <span className="sc-score-stat-label">较启用方案</span>
+                <span className="sc-score-stat-label">较启用模板</span>
                 <span className={`sc-score-stat-value ${delta >= 0 ? 'sc-delta-up' : 'sc-delta-down'}`}>{delta >= 0 ? '+' : ''}{delta}</span>
               </div>
             </div>
