@@ -525,7 +525,7 @@ export function VisualizationPage({ onBack }: VisualizationPageProps) {
 
 function ProductionChart({ fields }: { fields: VizField[] }) {
   const total = SERIES_DATA.length
-  const [stepped, setStepped] = useState(false)
+  const [stepped, setStepped] = useState(true)
   const [range, setRange] = useState<[number, number]>([0, total - 1])
   const [refLeft, setRefLeft] = useState<number | null>(null)
   const [refRight, setRefRight] = useState<number | null>(null)
