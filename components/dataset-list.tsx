@@ -277,7 +277,17 @@ export function DatasetList({ selectedId, onSelect, collapsed, onToggleCollapse,
                     <div slot="headline">归档</div>
                   </md-menu-item>
                   <md-divider />
-                  <md-menu-item>
+                  <md-menu-item
+                    onClick={() => {
+                      setMenuOpenId(null)
+                      if (!window.confirm(`确定要删除数据集「${d.name}」吗？`)) return
+                      setDatasets((prev) => prev.filter((item) => item.id !== d.id))
+                      if (selectedId === d.id) {
+                        const rest = datasets.filter((item) => item.id !== d.id)
+                        onSelect(rest[0]?.id ?? '')
+                      }
+                    }}
+                  >
                     <md-icon slot="start" style={{ color: 'var(--md-sys-color-error)' }}>
                       delete
                     </md-icon>
