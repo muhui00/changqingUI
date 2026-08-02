@@ -1949,7 +1949,7 @@
 }
 
 /* ================================================================
-   质控报告中心 (Report Center)
+   质检报告中心 (Report Center)
    ================================================================ */
 
 /* 全屏页面外壳 */
@@ -4187,7 +4187,7 @@
 }
 .cs-review-btn:hover { background: var(--md-sys-color-primary-container); color: var(--md-sys-color-primary); border-color: var(--md-sys-color-primary); }
 
-/* ══ 四类质控面板共享扩展样式（完整性 / 分布范围 / 相关性）══ */
+/* ══ 四类质检面板共享扩展样式（完整性 / 分布范围 / 相关性）══ */
 
 .cs-toolbar-hint { color: var(--md-sys-color-on-surface-variant); font-size: 12px; }
 .cs-muted { color: var(--md-sys-color-on-surface-variant); }

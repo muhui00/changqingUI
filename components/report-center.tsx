@@ -4,7 +4,7 @@ import { useState, useMemo } from 'react'
 
 // ─── 类型 ───────────────────────────────────────────────
 export type ReportStatus = '草稿' | '生成中' | '待审阅' | '已发布' | '已归档' | '生成失败'
-export type ReportType = '综合质控报告' | '一致性专项' | '完整性专项' | '分布范围专项' | '相关性专项'
+export type ReportType = '综合质检报告' | '一致性专项' | '完整性专项' | '分布范围专项' | '相关性专项'
 
 export interface ReportItem {
   id: string
@@ -26,9 +26,9 @@ export interface ReportItem {
 const MOCK_REPORTS: ReportItem[] = [
   {
     id: '1',
-    name: '苏里格区块2024年综合数据集_综合质控报告',
+    name: '苏里格区块2024年综合数据集_综合质检报告',
     reportNo: 'QCR-2024-001',
-    type: '综合质控报告',
+    type: '综合质检报告',
     dataset: '苏里格区块2024年综合数据集',
     datasetVersion: 'v3.2',
     score: 85,
@@ -37,7 +37,7 @@ const MOCK_REPORTS: ReportItem[] = [
     version: 'v1.2',
     status: '待审阅',
     author: '张工',
-    template: '数据集综合质控标准模板 v2.1',
+    template: '数据集综合质检标准模板 v2.1',
   },
   {
     id: '2',
@@ -101,9 +101,9 @@ const MOCK_REPORTS: ReportItem[] = [
   },
   {
     id: '6',
-    name: '乌审旗区块质控综合报告',
+    name: '乌审旗区块质检综合报告',
     reportNo: 'QCR-2024-006',
-    type: '综合质控报告',
+    type: '综合质检报告',
     dataset: '乌审旗区块2024数据集',
     datasetVersion: 'v1.0',
     score: 0,
@@ -112,7 +112,7 @@ const MOCK_REPORTS: ReportItem[] = [
     version: 'v0.1',
     status: '生成失败',
     author: '刘工',
-    template: '数据集综合质控标准模板 v2.1',
+    template: '数据集综合质检标准模板 v2.1',
   },
 ]
 
@@ -126,7 +126,7 @@ const STATUS_COLOR: Record<ReportStatus, string> = {
 }
 
 const TYPE_COLOR: Record<ReportType, string> = {
-  '综合质控报告': 'rtype-comprehensive',
+  '综合质检报告': 'rtype-comprehensive',
   '一致性专项':   'rtype-consistency',
   '完整性专项':   'rtype-completeness',
   '分布范围专项': 'rtype-distribution',
@@ -143,7 +143,7 @@ interface CreateReportDialogProps {
 
 export function CreateReportDialog({ open, onClose, onConfirm, initialDataset }: CreateReportDialogProps) {
   const today = new Date().toISOString().slice(0, 10).replace(/-/g, '')
-  const [type, setType] = useState<ReportType>('综合质控报告')
+  const [type, setType] = useState<ReportType>('综合质检报告')
   const [dataset, setDataset] = useState(initialDataset ?? '苏里格区块2024年综合数据集')
   const [datasetVersion, setDatasetVersion] = useState('v3.2')
   const [name, setName] = useState(`${initialDataset ?? '苏里格区块2024年综合数据集'}_${type}_${today}`)
@@ -159,7 +159,7 @@ export function CreateReportDialog({ open, onClose, onConfirm, initialDataset }:
   const handleConfirm = () => {
     if (!name.trim()) { setNameError('报告名称不能为空'); return }
     setNameError('')
-    onConfirm({ name, type, dataset, datasetVersion, status: '草稿', author: '张工', score: 0, version: 'v0.1', scoreDim: type === '综合质控报告' ? '综合' : type.replace('专项', '') })
+    onConfirm({ name, type, dataset, datasetVersion, status: '草稿', author: '张工', score: 0, version: 'v0.1', scoreDim: type === '综合质检报告' ? '综合' : type.replace('专项', '') })
   }
 
   if (!open) return null
@@ -192,7 +192,7 @@ export function CreateReportDialog({ open, onClose, onConfirm, initialDataset }:
             <label className="rc-form-label">报告类型<span className="rc-required">*</span></label>
             <div className="rc-form-field">
               <select className="rc-select" value={type} onChange={e => handleTypeChange(e.target.value as ReportType)}>
-                <option>综合质控报告</option>
+                <option>综合质检报告</option>
                 <option>一致性专项</option>
                 <option>完整性专项</option>
                 <option>分布范围专项</option>
@@ -205,7 +205,7 @@ export function CreateReportDialog({ open, onClose, onConfirm, initialDataset }:
             <label className="rc-form-label">报告模板<span className="rc-required">*</span></label>
             <div className="rc-form-field">
               <select className="rc-select">
-                <option>数据集综合质控标准模板 v2.1（生效）</option>
+                <option>数据集综合质检标准模板 v2.1（生效）</option>
                 <option>一致性专项模板 v1.0（生效）</option>
               </select>
             </div>
@@ -245,7 +245,7 @@ export function CreateReportDialog({ open, onClose, onConfirm, initialDataset }:
           </div>
 
           <div className="rc-form-row rc-form-row--switch">
-            <label className="rc-form-label">自动同步最新质控数据</label>
+            <label className="rc-form-label">自动同步最新质检数据</label>
             <div className="rc-form-field rc-form-field--switch">
               <button
                 className={`rc-toggle${autoSync ? ' rc-toggle--on' : ''}`}
@@ -443,7 +443,7 @@ export function ReportCenter({ onPreview }: ReportCenterProps) {
       id: String(Date.now()),
       reportNo: `QCR-2024-00${reports.length + 1}`,
       generatedAt: new Date().toLocaleString('zh-CN', { hour12: false }).slice(0, 16),
-      template: '数据集综合质控标准模板 v2.1',
+      template: '数据集综合质检标准模板 v2.1',
       ...partial,
     } as ReportItem
     setReports(prev => [newReport, ...prev])
@@ -466,8 +466,8 @@ export function ReportCenter({ onPreview }: ReportCenterProps) {
       {/* 页面头部 */}
       <div className="rc-page-header">
         <div className="rc-page-header-text">
-          <h1 className="md-typescale-headline-small rc-page-title">质控报告中心</h1>
-          <p className="md-typescale-body-medium rc-page-subtitle">管理、生成和交付数据集质控报告</p>
+          <h1 className="md-typescale-headline-small rc-page-title">质检报告中心</h1>
+          <p className="md-typescale-body-medium rc-page-subtitle">管理、生成和交付数据集质检报告</p>
         </div>
       </div>
 
@@ -493,7 +493,7 @@ export function ReportCenter({ onPreview }: ReportCenterProps) {
 
           <select className="rc-filter-select" value={filterType} onChange={e => setFilterType(e.target.value as ReportType | '全部类型')} aria-label="报告类型筛选">
             <option value="全部类型">全部类型</option>
-            <option>综合质控报告</option>
+            <option>综合质检报告</option>
             <option>一致性专项</option>
             <option>完整性专项</option>
             <option>分布范围专项</option>

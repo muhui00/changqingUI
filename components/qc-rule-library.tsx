@@ -95,7 +95,7 @@ function RuleDialog({ rule, mode, onClose, onSave }: RuleDialogProps) {
 
   const isEnabledEdit = mode === 'edit' && rule?.status === '启用'
   const readOnly = mode === 'view'
-  const title = mode === 'create' ? '新建质控规则' : mode === 'view' ? '查看质控规则' : '编辑质控规则'
+  const title = mode === 'create' ? '新建质检规则' : mode === 'view' ? '查看质检规则' : '编辑质检规则'
 
   const preview = `当 [${rule?.mainField ?? '目标字段'}] < ${lower} 或 [${rule?.mainField ?? '目标字段'}] > ${upper} 时，标记为${level}异常；在同区块同井型样本中同时执行 IQR(${iqr}) 检查。`
 
@@ -409,13 +409,13 @@ export function QCRuleLibrary() {
       {/* 页面头部 */}
       <div className="lib-page-header">
         <div className="lib-breadcrumb md-typescale-label-medium">
-          <md-icon>tune</md-icon>质控配置<md-icon class="lib-bc-sep">chevron_right</md-icon>
-          <span className="lib-bc-current">质控规则库</span>
+          <md-icon>tune</md-icon>质检配置<md-icon class="lib-bc-sep">chevron_right</md-icon>
+          <span className="lib-bc-current">质检规则库</span>
         </div>
         <div className="lib-page-header-row">
           <div>
-            <h1 className="md-typescale-headline-small lib-page-title">质控规则库</h1>
-            <p className="md-typescale-body-medium lib-page-subtitle">集中维护质控条件、适用场景、异常分级、处置策略与试运行版本</p>
+            <h1 className="md-typescale-headline-small lib-page-title">质检规则库</h1>
+            <p className="md-typescale-body-medium lib-page-subtitle">集中维护质检条件、适用场景、异常分级、处置策略与试运行版本</p>
           </div>
           <div className="lib-header-actions">
             <button className="lib-btn lib-btn--ghost"><md-icon>upload_file</md-icon>批量导入</button>

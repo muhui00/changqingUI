@@ -28,7 +28,7 @@ export function TopNav({ currentDataset, activePage = 'overview', onNavOverview,
         </div>
         <div className="top-nav-title-group">
           <span className="top-nav-platform-name md-typescale-title-medium">
-            长庆油气田数据质控平台
+            长庆油气田数据质检平台
           </span>
         </div>
       </div>
@@ -41,7 +41,7 @@ export function TopNav({ currentDataset, activePage = 'overview', onNavOverview,
           onClick={onNavOverview}
         >
           <md-icon>dashboard</md-icon>
-          数据质控总览
+          数据质检总览
         </button>
 
         <button
@@ -77,12 +77,12 @@ export function TopNav({ currentDataset, activePage = 'overview', onNavOverview,
             </md-menu-item>
             <md-menu-item onClick={() => { setAchieveMenuOpen(false); onNavReportCenter?.() }}>
               <md-icon slot="start">description</md-icon>
-              <div slot="headline">质控报告管理</div>
+              <div slot="headline">质检报告管理</div>
             </md-menu-item>
           </md-menu>
         </div>
 
-        {/* 质控配置下拉 */}
+        {/* 质检配置下拉 */}
         <div className="top-nav-dropdown-wrap" style={{ position: 'relative' }}>
           <button
             className={`top-nav-link${activePage === 'field-standard' || activePage === 'qc-rule' || activePage === 'weighted-scoring' ? ' top-nav-link--active' : ''}`}
@@ -92,7 +92,7 @@ export function TopNav({ currentDataset, activePage = 'overview', onNavOverview,
             onClick={() => setConfigMenuOpen(!configMenuOpen)}
           >
             <md-icon>tune</md-icon>
-            质控配置
+            质检配置
             <md-icon class="top-nav-chevron">expand_more</md-icon>
           </button>
           <md-menu
@@ -106,7 +106,7 @@ export function TopNav({ currentDataset, activePage = 'overview', onNavOverview,
             </md-menu-item>
             <md-menu-item onClick={() => { setConfigMenuOpen(false); onNavQCRule?.() }}>
               <md-icon slot="start">rule</md-icon>
-              <div slot="headline">质控规则库</div>
+              <div slot="headline">质检规则库</div>
             </md-menu-item>
             <md-menu-item onClick={() => { setConfigMenuOpen(false); onNavWeightedScoring?.() }}>
               <md-icon slot="start">assessment</md-icon>

@@ -16,7 +16,7 @@ const TAB_LABELS: { key: QCWorkspaceType; label: string }[] = [
   { key: 'correlation', label: '相关性校验' },
 ]
 
-type Source = '自动质控' | '人工框选' | '模型诊断'
+type Source = '自动质检' | '人工框选' | '模型诊断'
 type Reason = '高残差' | '方向相反' | '逻辑冲突' | '时序错位'
 type Risk = '提示' | '一般' | '严重'
 type CorrStatus = '待处理' | '保留' | '已修正' | '待复核'
@@ -36,9 +36,9 @@ interface CorrRecord {
 }
 
 const MOCK: CorrRecord[] = [
-  { id: 'c1', source: '自动质控', well: '苏36-11井', location: '第 3 段', fieldGroup: '加砂量 / 携砂液量', actual: '82m³ / 210m³', expected: '回归预测 118m³', metric: '残差 -36 (标准化 3.2)', reason: '高残差', risk: '严重', status: '待处理' },
+  { id: 'c1', source: '自动质检', well: '苏36-11井', location: '第 3 段', fieldGroup: '加砂量 / 携砂液量', actual: '82m³ / 210m³', expected: '回归预测 118m³', metric: '残差 -36 (标准化 3.2)', reason: '高残差', risk: '严重', status: '待处理' },
   { id: 'c2', source: '人工框选', well: '苏36-12井', location: '第 5 段', fieldGroup: '砂比 / 加砂量', actual: '8% / 145m³', expected: '砂比↑应加砂量↑', metric: 'r=-0.42', reason: '方向相反', risk: '一般', status: '待处理' },
-  { id: 'c3', source: '自动质控', well: '苏36-13井', location: '2026-04-02', fieldGroup: '油压 / 排量', actual: '32MPa / 0.5m³/min', expected: '逻辑区间 [排量>2]', metric: '逻辑失败', reason: '逻辑冲突', risk: '严重', status: '待复核' },
+  { id: 'c3', source: '自动质检', well: '苏36-13井', location: '2026-04-02', fieldGroup: '油压 / 排量', actual: '32MPa / 0.5m³/min', expected: '逻辑区间 [排量>2]', metric: '逻辑失败', reason: '逻辑冲突', risk: '严重', status: '待复核' },
   { id: 'c4', source: '模型诊断', well: '苏36-14井', location: '记录 55', fieldGroup: '孔隙度 / 渗透率', actual: '16% / 0.02mD', expected: '孔渗正相关', metric: '残差 2.6σ', reason: '高残差', risk: '一般', status: '保留' },
   { id: 'c5', source: '人工框选', well: '苏37-01井', location: '2026-04-05', fieldGroup: '日产气 / 井口压力', actual: '5×10⁴ / 12MPa', expected: '滞后 2 天对齐', metric: '时移 +2d', reason: '时序错位', risk: '提示', status: '已修正' },
 ]
@@ -60,7 +60,7 @@ const SCATTER = [
   { x: 95, y: 120, anomaly: true }, { x: 110, y: 280 }, { x: 125, y: 315 }, { x: 70, y: 178 },
 ]
 
-const SOURCES: Source[] = ['自动质控', '人工框选', '模型诊断']
+const SOURCES: Source[] = ['自动质检', '人工框选', '模型诊断']
 const STATUS_LIST: CorrStatus[] = ['待处理', '保留', '已修正', '待复核']
 
 const FIELD_GROUPS = ['加砂量—砂比—携砂液量', '油压—套压—排量', '孔隙度—渗透率—含气饱和度', '日产气—井口压力—气油比']
@@ -92,7 +92,7 @@ export function CorrelationWorkspace({ datasetName = '苏里格区块2024年综�
     <div className="cs-workspace">
       <div className="cs-topbar">
         <div className="cs-topbar-left">
-          <button className="cs-back-btn" onClick={onBack} aria-label="返回数据质控总览"><md-icon>arrow_back</md-icon>数据质控总览</button>
+          <button className="cs-back-btn" onClick={onBack} aria-label="返回数据质检总览"><md-icon>arrow_back</md-icon>数据质检总览</button>
           <span className="cs-topbar-sep">/</span>
           <div className="cs-topbar-dataset">
             <md-icon style={{ fontSize: 14 }}>dataset</md-icon>
@@ -273,7 +273,7 @@ export function CorrelationWorkspace({ datasetName = '苏里格区块2024年综�
 }
 
 function SourceBadge({ source }: { source: Source }) {
-  const map: Record<Source, string> = { '自动质控': 'cs-src--auto', '人工框选': 'cs-src--manual', '模型诊断': 'cs-src--model' }
+  const map: Record<Source, string> = { '自动质检': 'cs-src--auto', '人工框选': 'cs-src--manual', '模型诊断': 'cs-src--model' }
   return <span className={`cs-src ${map[source]}`}>{source}</span>
 }
 

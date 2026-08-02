@@ -247,7 +247,7 @@ export function VisualizationPage({ onBack }: VisualizationPageProps) {
 
   return (
     <div className="viz-page">
-      {/* ── 数据集列表面板（与数据质控总览完全一致）── */}
+      {/* ── 数据集列表面板（与数据质检总览完全一致）── */}
       <DatasetList
         datasets={datasets}
         onDatasetsChange={setDatasets}

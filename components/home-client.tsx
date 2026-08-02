@@ -103,7 +103,7 @@ export function HomeClient() {
     )
   }
 
-  // ── 质控规则库 ──
+  // ── 质检规则库 ──
   if (page === 'qc-rule') {
     return (
       <div className="app-shell">
@@ -228,7 +228,7 @@ export function HomeClient() {
     )
   }
 
-  // ── 数据质控总览（默认首页）──
+  // ── 数据质检总览（默认首页）──
   return (
     <div className="app-shell">
       <TopNav currentDataset="苏里格区块2024年综合数据集" activePage="overview"

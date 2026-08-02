@@ -102,7 +102,7 @@ const DATASET_CONTENT: Record<string, DatasetContent> = {
       ] },
     },
   },
-  // 陇东区块地质参数数据集（质控中）
+  // 陇东区块地质参数数据集（质检中）
   '3': {
     radar: [
       { label: '一致性', score: 72, anomalyCount: 21, reviewedCount: 9 },

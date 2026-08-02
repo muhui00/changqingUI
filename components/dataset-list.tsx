@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { NewDatasetDialog } from './new-dataset-dialog'
 
 export type DatasetStatus =
-  | '质控中'
+  | '质检中'
   | '待复核'
   | '已完成'
   | '已归档'
@@ -41,7 +41,7 @@ export const MOCK_DATASETS: Dataset[] = [
     id: '3',
     name: '陇东区块地质参数数据集',
     version: 'v1.5',
-    status: '质控中',
+    status: '质检中',
     updatedAt: '2024-07-22',
   },
   {
@@ -62,7 +62,7 @@ export const MOCK_DATASETS: Dataset[] = [
 ]
 
 const STATUS_CONFIG: Record<DatasetStatus, { color: string; bg: string; label: string }> = {
-  质控中: { color: '#1565c0', bg: '#e3f2fd', label: '质控中' },
+  质检中: { color: '#1565c0', bg: '#e3f2fd', label: '质检中' },
   待复核: { color: '#e65100', bg: '#fff3e0', label: '待复核' },
   已完成: { color: '#2e7d32', bg: '#e8f5e9', label: '已完成' },
   已归档: { color: '#546e7a', bg: '#eceff1', label: '已归档' },
@@ -178,7 +178,7 @@ export function DatasetList({ datasets, onDatasetsChange, selectedId, onSelect, 
 
       {/* 状态筛选 */}
       <div className="dataset-filter-row">
-        {(['全部', '质控中', '待复核', '已完成'] as const).map((s) => (
+        {(['全部', '质检中', '待复核', '已完成'] as const).map((s) => (
           <button
             key={s}
             className={`filter-chip md-typescale-label-small${filterStatus === s ? ' filter-chip--active' : ''}`}

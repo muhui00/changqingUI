@@ -89,7 +89,7 @@ const PRESETS: { name: string; w: [number, number, number, number]; tip: string 
 ]
 
 const SCHEMES: Scheme[] = [
-  { id: '1', name: '致密气综合质控评分', code: 'SCORE_TIGHT_GAS', version: 'V2.1', status: '启用', scene: '陆地 / 致密气 / 全数据类型', owner: '王玉慧', updatedAt: '2026-07-28 22:15', templateRefs: 3, taskRefs: 2, dims: { consistency: 30, completeness: 25, distribution: 25, correlation: 20 } },
+  { id: '1', name: '致密气综合质检评分', code: 'SCORE_TIGHT_GAS', version: 'V2.1', status: '启用', scene: '陆地 / 致密气 / 全数据类型', owner: '王玉慧', updatedAt: '2026-07-28 22:15', templateRefs: 3, taskRefs: 2, dims: { consistency: 30, completeness: 25, distribution: 25, correlation: 20 } },
   { id: '2', name: '页岩气入库治理评分', code: 'SCORE_SHALE_GAS_ETL', version: 'V1.3', status: '启用', scene: '陆地 / 页岩气 / 基础数据集', owner: '张工', updatedAt: '2026-07-20 10:32', templateRefs: 2, taskRefs: 1, dims: { consistency: 35, completeness: 35, distribution: 20, correlation: 10 } },
   { id: '3', name: '煤层气分析建模评分', code: 'SCORE_CBM_MODEL', version: 'V0.4', status: '草稿', scene: '陆地 / 煤层气 / 综合数据集', owner: '李工', updatedAt: '2026-07-30 16:08', templateRefs: 0, taskRefs: 0, dims: { consistency: 20, completeness: 25, distribution: 25, correlation: 30 } },
   { id: '4', name: '通用数据质量评分', code: 'SCORE_GENERAL_V2', version: 'V2.0', status: '待审核', scene: '全部场景 / 全数据类型', owner: '赵工', updatedAt: '2026-07-25 09:14', templateRefs: 5, taskRefs: 4, dims: { consistency: 25, completeness: 25, distribution: 25, correlation: 25 } },
@@ -283,7 +283,7 @@ export function WeightedScoring() {
       {/* 页面头部 */}
       <div className="sc-page-header">
         <div className="lib-breadcrumb md-typescale-label-medium">
-          <md-icon>tune</md-icon>质控配置<md-icon class="lib-bc-sep">chevron_right</md-icon>
+          <md-icon>tune</md-icon>质检配置<md-icon class="lib-bc-sep">chevron_right</md-icon>
           <span className="lib-bc-current">综合加权评分</span>
         </div>
         <div className="sc-header-row">
@@ -542,7 +542,7 @@ export function WeightedScoring() {
 
                 <div className="sc-source-mode">
                   <span className="sc-source-label">规则来源：</span>
-                  <label className="sc-radio"><input type="radio" name="src" defaultChecked />跟随质控模板</label>
+                  <label className="sc-radio"><input type="radio" name="src" defaultChecked />跟随质检模板</label>
                   <label className="sc-radio"><input type="radio" name="src" />固定规则清单</label>
                 </div>
 
@@ -678,7 +678,7 @@ export function WeightedScoring() {
           {/* 预览数据选择 */}
           <div className="sc-preview-select">
             <div className="sc-field"><label className="sc-label">预览对象</label>
-              <select className="sc-select"><option>LGPC1-14-3H 综合质控任务 · 2026-07-28</option><option>苏里格2024综合数据集 v3.2</option></select></div>
+              <select className="sc-select"><option>LGPC1-14-3H 综合质检任务 · 2026-07-28</option><option>苏里格2024综合数据集 v3.2</option></select></div>
             <div className="sc-preview-select-row">
               <select className="sc-select sc-select--sm"><option>数据集粒度</option><option>井组</option><option>单井</option></select>
               <select className="sc-select sc-select--sm" value={calcVersion} onChange={e => setCalcVersion(e.target.value as typeof calcVersion)}>
@@ -834,7 +834,7 @@ function NewTemplateDialog({ onClose, onCreate }: {
         <div className="cs-dialog-body">
           <div className="sc-field">
             <label className="sc-label">模板名称<span className="sc-req">*</span></label>
-            <input className="sc-input" value={name} onChange={e => setName(e.target.value)} placeholder="如：致密气综合质控评分" autoFocus />
+            <input className="sc-input" value={name} onChange={e => setName(e.target.value)} placeholder="如：致密气综合质检评分" autoFocus />
           </div>
           <div className="sc-field">
             <label className="sc-label">模板编码<span className="sc-req">*</span></label>

@@ -113,9 +113,9 @@ export function CompletenessWorkspace({ datasetName = '苏里格区块2024年综
       {/* 顶部上下文栏 */}
       <div className="cs-topbar">
         <div className="cs-topbar-left">
-          <button className="cs-back-btn" onClick={onBack} aria-label="返回数据质控总览">
+          <button className="cs-back-btn" onClick={onBack} aria-label="返回数据质检总览">
             <md-icon>arrow_back</md-icon>
-            数据质控总览
+            数据质检总览
           </button>
           <span className="cs-topbar-sep">/</span>
           <div className="cs-topbar-dataset">
@@ -357,7 +357,7 @@ export function CompletenessWorkspace({ datasetName = '苏里格区块2024年综
                 </div>
                 <div className="cs-converter-hint">
                   <md-icon style={{ fontSize: 14 }}>info</md-icon>
-                  补全值仅写入质控工作副本，原始空值状态保留可追溯。
+                  补全值仅写入质检工作副本，原始空值状态保留可追溯。
                 </div>
               </div>
             </div>

@@ -88,7 +88,7 @@ export function DistributionWorkspace({ datasetName = '苏里格区块2024年综
     <div className="cs-workspace">
       <div className="cs-topbar">
         <div className="cs-topbar-left">
-          <button className="cs-back-btn" onClick={onBack} aria-label="返回数据质控总览"><md-icon>arrow_back</md-icon>数据质控总览</button>
+          <button className="cs-back-btn" onClick={onBack} aria-label="返回数据质检总览"><md-icon>arrow_back</md-icon>数据质检总览</button>
           <span className="cs-topbar-sep">/</span>
           <div className="cs-topbar-dataset">
             <md-icon style={{ fontSize: 14 }}>dataset</md-icon>

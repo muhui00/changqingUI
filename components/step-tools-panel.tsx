@@ -274,7 +274,7 @@ export function StepToolsPanel({ datasetId, qced = false, onQCComplete, activeSt
               <md-icon slot="icon">replay</md-icon>
               重新质检
             </md-outlined-button>
-            <md-filled-button class="step-start-btn step-report-btn" aria-label="创建质控报告" onClick={() => onCreateReport?.()}>
+            <md-filled-button class="step-start-btn step-report-btn" aria-label="创建质检报告" onClick={() => onCreateReport?.()}>
               <md-icon slot="icon">description</md-icon>
               创建报告
             </md-filled-button>

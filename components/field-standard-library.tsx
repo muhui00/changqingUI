@@ -327,7 +327,7 @@ function FieldDialog({ field, mode, onClose, onSave }: FieldDialogProps) {
               </table>
 
               <div className="lib-section-title lib-section-title--between">
-                <span><span className="lib-section-bar lib-bar--success" />关联质控规则</span>
+                <span><span className="lib-section-bar lib-bar--success" />关联质检规则</span>
                 {!readOnly && <button className="lib-btn lib-btn--ghost lib-btn--sm"><md-icon>link</md-icon>关联规则</button>}
               </div>
               <table className="lib-inner-table">
@@ -400,13 +400,13 @@ export function FieldStandardLibrary() {
       {/* 页面头部 */}
       <div className="lib-page-header">
         <div className="lib-breadcrumb md-typescale-label-medium">
-          <md-icon>tune</md-icon>质控配置<md-icon class="lib-bc-sep">chevron_right</md-icon>
+          <md-icon>tune</md-icon>质检配置<md-icon class="lib-bc-sep">chevron_right</md-icon>
           <span className="lib-bc-current">字段标准库</span>
         </div>
         <div className="lib-page-header-row">
           <div>
             <h1 className="md-typescale-headline-small lib-page-title">字段标准库</h1>
-            <p className="md-typescale-body-medium lib-page-subtitle">统一维护字段定义、类型、单位、值域、来源映射及关联质控规则</p>
+            <p className="md-typescale-body-medium lib-page-subtitle">统一维护字段定义、类型、单位、值域、来源映射及关联质检规则</p>
           </div>
           <div className="lib-header-actions">
             <button className="lib-btn lib-btn--ghost"><md-icon>upload_file</md-icon>批量导入</button>
