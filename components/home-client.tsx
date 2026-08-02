@@ -65,6 +65,13 @@ export function HomeClient() {
 
   const handleBackToReportCenter = () => setPage('report-center')
 
+  // 创建报告并直接跳转到报告预览页面
+  const handleCreateReportAndPreview = () => {
+    setCreateReportOpen(false)
+    setPreviewReportId(String(Date.now()))
+    setPage('report-preview')
+  }
+
   const handleSwitchWorkspaceTab = (tab: QCWorkspaceType) => {
     setActiveWorkspace(tab)
     setActiveStep(tab as QCCardType)
@@ -222,7 +229,7 @@ export function HomeClient() {
           />
           <CreateReportDialog open={createReportOpen}
             onClose={() => setCreateReportOpen(false)}
-            onConfirm={() => setCreateReportOpen(false)} />
+            onConfirm={handleCreateReportAndPreview} />
         </div>
       </div>
     )
@@ -263,7 +270,7 @@ export function HomeClient() {
         />
         <CreateReportDialog open={createReportOpen}
           onClose={() => setCreateReportOpen(false)}
-          onConfirm={() => setCreateReportOpen(false)} />
+          onConfirm={handleCreateReportAndPreview} />
       </div>
     </div>
   )
