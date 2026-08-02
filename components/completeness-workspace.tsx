@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import type { QCWorkspaceType } from './consistency-workspace'
+import { QcVisualization } from './viz-charts'
 
 interface CompletenessWorkspaceProps {
   datasetName?: string
@@ -320,6 +321,9 @@ export function CompletenessWorkspace({ datasetName = '苏里格区块2024年综
             </table>
           </div>
         </section>
+
+        {/* ── 数据可视化 ── */}
+        <QcVisualization />
       </div>
 
       {/* 智能补全弹窗 */}

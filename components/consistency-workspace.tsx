@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
+import { QcVisualization } from './viz-charts'
 
 export type QCWorkspaceType = 'consistency' | 'completeness' | 'distribution' | 'correlation'
 
@@ -543,6 +544,8 @@ export function ConsistencyWorkspace({ datasetName = '苏里格区块2024年综�
           </div>
         </section>
 
+        {/* ── 数据可视化 ── */}
+        <QcVisualization />
 
       </div>
 

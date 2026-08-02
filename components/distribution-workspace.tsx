@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { QcVisualization } from './viz-charts'
 import type { QCWorkspaceType } from './consistency-workspace'
 
 interface DistributionWorkspaceProps {
@@ -219,6 +220,9 @@ export function DistributionWorkspace({ datasetName = '苏里格区块2024年综
             </table>
           </div>
         </section>
+
+        {/* ── 数据可视化 ── */}
+        <QcVisualization />
       </div>
 
       {/* 范围处理弹窗 */}

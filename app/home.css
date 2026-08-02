@@ -5411,6 +5411,127 @@
 .fc-stage-range { font-size: 11px; color: var(--md-sys-color-on-surface-variant); font-variant-numeric: tabular-nums; }
 
 /* ================================================================
+   可嵌入数据可视化面板（质检工作台复用）
+   ================================================================ */
+.qcv-card {
+  display: flex;
+  flex-direction: column;
+  background: var(--md-sys-color-surface);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.qcv-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--md-sys-color-outline-variant);
+}
+.qcv-head-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--md-sys-color-on-surface);
+}
+.qcv-head-title md-icon { font-size: 18px; color: var(--md-sys-color-primary); }
+
+.qcv-tabs { display: inline-flex; gap: 4px; }
+.qcv-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 14px;
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: 8px;
+  background: var(--md-sys-color-surface);
+  color: var(--md-sys-color-on-surface-variant);
+  font-size: 12.5px;
+  font-family: var(--md-ref-typeface-plain);
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+.qcv-tab md-icon { font-size: 16px; }
+.qcv-tab:hover { background: var(--md-sys-color-surface-container-high); }
+.qcv-tab--active {
+  background: var(--md-sys-color-primary-container);
+  color: var(--md-sys-color-primary);
+  border-color: var(--md-sys-color-primary);
+  font-weight: 600;
+}
+
+.qcv-body { min-height: 0; }
+.qcv-layout { display: flex; align-items: stretch; }
+
+.qcv-fields {
+  flex-shrink: 0;
+  width: 200px;
+  border-right: 1px solid var(--md-sys-color-outline-variant);
+  display: flex;
+  flex-direction: column;
+  background: var(--md-sys-color-surface-container-lowest);
+}
+.qcv-fields--collapsed { width: 40px; }
+.qcv-fields-head {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--md-sys-color-outline-variant);
+}
+.qcv-fields-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--md-sys-color-on-surface-variant);
+  cursor: pointer;
+}
+.qcv-fields-toggle:hover { background: var(--md-sys-color-surface-container-high); }
+.qcv-fields-toggle md-icon { font-size: 18px; }
+.qcv-fields-title { font-size: 12px; font-weight: 600; color: var(--md-sys-color-on-surface); }
+
+.qcv-fields-body { padding: 6px 8px 10px; overflow-y: auto; max-height: 420px; }
+.qcv-fcat { margin-bottom: 8px; }
+.qcv-fcat-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 2px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--md-sys-color-on-surface);
+  cursor: pointer;
+}
+.qcv-fcat-label md-icon { font-size: 15px; color: var(--md-sys-color-on-surface-variant); }
+.qcv-flist { list-style: none; margin: 0; padding: 0 0 0 18px; }
+.qcv-fitem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 2px;
+  font-size: 12px;
+  color: var(--md-sys-color-on-surface-variant);
+  cursor: pointer;
+}
+.qcv-fitem:hover { color: var(--md-sys-color-on-surface); }
+.qcv-fdot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.qcv-fname { flex: 1; }
+.qcv-funit { font-size: 10.5px; color: var(--md-sys-color-outline); }
+
+.qcv-chart { flex: 1; min-width: 0; height: 440px; }
+.qcv-chart--full { width: 100%; }
+.qcv-chart .prod-chart-wrap { height: 100%; }
+
+/* ================================================================
    测井剖面图
    ================================================================ */
 

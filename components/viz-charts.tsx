@@ -862,3 +862,120 @@ export function DataTable({ well, onWellChange }: { well: string; onWellChange: 
     </div>
   )
 }
+
+// ── 可嵌入的数据可视化面板（曲线图 / 测井剖面图 / 数据表格）──────────────────────────
+// 默认展示曲线图的压裂施工曲线，供四类质检工作台复用
+
+export function QcVisualization() {
+  const [activeChart, setActiveChart] = useState<VizChartType>('production')
+  const [categories, setCategories] = useState<VizFieldCategory[]>(DEFAULT_CATEGORIES)
+  const [selectedWell, setSelectedWell] = useState(WELL_LIST[0].name)
+  const [fieldsOpen, setFieldsOpen] = useState(true)
+
+  const toggleField = (catId: string, fieldId: string) => {
+    setCategories(prev => prev.map(c =>
+      c.id !== catId ? c : { ...c, fields: c.fields.map(f => f.id !== fieldId ? f : { ...f, checked: !f.checked }) }
+    ))
+  }
+  const toggleCatAll = (catId: string) => {
+    setCategories(prev => prev.map(c => {
+      if (c.id !== catId) return c
+      const allChecked = c.fields.every(f => f.checked)
+      return { ...c, fields: c.fields.map(f => ({ ...f, checked: !allChecked })) }
+    }))
+  }
+
+  const checkedFields = categories.flatMap(c => c.fields.filter(f => f.checked))
+
+  const TABS: { key: VizChartType; label: string; icon: string }[] = [
+    { key: 'production', label: '曲线图', icon: 'show_chart' },
+    { key: 'welllog', label: '测井剖面图', icon: 'ssid_chart' },
+    { key: 'fractable', label: '数据表格', icon: 'table_chart' },
+  ]
+
+  return (
+    <section className="qcv-card" aria-label="数据可视化">
+      <div className="qcv-head">
+        <div className="qcv-head-title">
+          <md-icon>insights</md-icon>
+          <span>数据可视化</span>
+        </div>
+        <div className="qcv-tabs" role="tablist">
+          {TABS.map(t => (
+            <button
+              key={t.key}
+              role="tab"
+              aria-selected={activeChart === t.key}
+              className={`qcv-tab${activeChart === t.key ? ' qcv-tab--active' : ''}`}
+              onClick={() => setActiveChart(t.key)}
+            >
+              <md-icon>{t.icon}</md-icon>
+              {t.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="qcv-body">
+        {activeChart === 'production' ? (
+          <div className="qcv-layout">
+            <aside className={`qcv-fields${fieldsOpen ? '' : ' qcv-fields--collapsed'}`} aria-label="字段选择">
+              <div className="qcv-fields-head">
+                <button className="qcv-fields-toggle" onClick={() => setFieldsOpen(v => !v)}
+                  aria-label={fieldsOpen ? '收起字段列表' : '展开字段列表'} title={fieldsOpen ? '收起' : '展开'}>
+                  <md-icon>{fieldsOpen ? 'chevron_left' : 'chevron_right'}</md-icon>
+                </button>
+                {fieldsOpen && <span className="qcv-fields-title">字段（已选 {checkedFields.length}）</span>}
+              </div>
+              {fieldsOpen && (
+                <div className="qcv-fields-body">
+                  {categories.map(cat => {
+                    const allChecked = cat.fields.every(f => f.checked)
+                    const someChecked = !allChecked && cat.fields.some(f => f.checked)
+                    return (
+                      <div key={cat.id} className="qcv-fcat">
+                        <label className="qcv-fcat-label">
+                          <input type="checkbox" checked={allChecked}
+                            ref={el => { if (el) el.indeterminate = someChecked }}
+                            onChange={() => toggleCatAll(cat.id)}
+                            aria-label={`选择 ${cat.name} 下所有字段`} />
+                          <md-icon>{cat.icon}</md-icon>
+                          <span className="qcv-fcat-name">{cat.name}</span>
+                        </label>
+                        <ul className="qcv-flist">
+                          {cat.fields.map(f => (
+                            <li key={f.id}>
+                              <label className="qcv-fitem">
+                                <input type="checkbox" checked={f.checked}
+                                  onChange={() => toggleField(cat.id, f.id)}
+                                  aria-label={`选择字段 ${f.name}`} />
+                                <span className="qcv-fdot" style={{ background: f.color }} />
+                                <span className="qcv-fname">{f.name}</span>
+                                {f.unit && <span className="qcv-funit">{f.unit}</span>}
+                              </label>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </aside>
+            <div className="qcv-chart">
+              <ProductionChart fields={checkedFields} />
+            </div>
+          </div>
+        ) : activeChart === 'welllog' ? (
+          <div className="qcv-chart qcv-chart--full">
+            <WellLogChart well={selectedWell} onWellChange={setSelectedWell} />
+          </div>
+        ) : (
+          <div className="qcv-chart qcv-chart--full">
+            <DataTable well={selectedWell} onWellChange={setSelectedWell} />
+          </div>
+        )}
+      </div>
+    </section>
+  )
+}
