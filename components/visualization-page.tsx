@@ -444,7 +444,7 @@ export function VisualizationPage({ onBack }: VisualizationPageProps) {
               onClick={() => setActiveChart('fractable')}
             >
               <md-icon>table_chart</md-icon>
-              施工曲线表格
+              数据表格
             </button>
           </div>
           <div className="viz-tabs-actions">
@@ -463,7 +463,7 @@ export function VisualizationPage({ onBack }: VisualizationPageProps) {
             <WellLogChart well={selectedWell} onWellChange={setSelectedWell} />
           )}
           {activeChart === 'fractable' && (
-            <FracTable well={selectedWell} onWellChange={setSelectedWell} />
+            <DataTable well={selectedWell} onWellChange={setSelectedWell} />
           )}
         </div>
       </main>
@@ -663,114 +663,292 @@ function WellLogChart({ well, onWellChange }: { well: string; onWellChange: (w: 
   )
 }
 
-// ── 压裂施工曲线表格 ────────────────────────────────────────────────────────────
+// ── 通用数据表格（支持多种字段类别）────────────────────────────────────────────
 
-interface FracRow {
-  time: string          // 施工时间 hh:mm:ss
-  elapsed: number       // 已施工时长 min
-  rate: number          // 施工排量 m³/min
-  tubingPressure: number// 油压 MPa
-  casingPressure: number// 套压 MPa
-  sandRatio: number     // 砂比 %
-  sandRate: number      // 瞬时砂量 kg/min
-  cumFluid: number      // 累计液量 m³
-  cumSand: number       // 累计砂量 m³
-  stage: string         // 施工阶段
-  status: 'normal' | 'warning' | 'alarm'
+type CellType = 'text' | 'num' | 'mono' | 'tag' | 'status'
+
+interface TableColumn {
+  key: string
+  label: string
+  unit?: string
+  type?: CellType
+  decimals?: number
+  sticky?: boolean
 }
 
-const FRAC_STAGES = [
-  { name: '前置液', minutes: 18, rate: 6.0, sr: 0 },
-  { name: '携砂液', minutes: 46, rate: 6.5, sr: 8 },
-  { name: '顶替液', minutes: 10, rate: 6.2, sr: 0 },
-]
+interface StatusCell { label: string; level: 'normal' | 'warning' | 'alarm' }
 
-function genFracData(): FracRow[] {
-  const rows: FracRow[] = []
-  let elapsed = 0
-  let cumFluid = 0
-  let cumSand = 0
+interface SummaryItem { label: string; value: string | number; unit?: string; color?: string }
+
+interface TableDataset {
+  id: string
+  name: string
+  icon: string
+  columns: TableColumn[]
+  rows: Record<string, unknown>[]
+  summary: SummaryItem[]
+  hasStatus?: boolean
+}
+
+// 确定性随机，保证每次渲染数据一致
+function makeRng(seed: number) {
+  let s = seed
+  return () => { s = (s * 1103515245 + 12345) & 0x7fffffff; return (s % 1000) / 1000 }
+}
+
+// 标签配色
+const TAG_PALETTE = ['#1565c0', '#e65100', '#2e7d32', '#6a1b9a', '#00695c', '#c62828', '#4527a0', '#ad1457']
+const TAG_FIXED: Record<string, string> = {
+  前置液: '#1565c0', 携砂液: '#e65100', 顶替液: '#2e7d32',
+  正常生产: '#2e7d32', 关井: '#e65100', 措施作业: '#6a1b9a',
+  煤岩: '#4527a0', 泥岩: '#00695c', 砂岩: '#e65100', 灰岩: '#1565c0', 页岩: '#6a1b9a',
+  三角洲: '#1565c0', 滨浅湖: '#00695c', 河道: '#e65100', 分流河道: '#2e7d32',
+}
+function tagColor(v: string): string {
+  if (TAG_FIXED[v]) return TAG_FIXED[v]
+  let h = 0
+  for (let i = 0; i < v.length; i++) h = (h * 31 + v.charCodeAt(i)) & 0x7fffffff
+  return TAG_PALETTE[h % TAG_PALETTE.length]
+}
+
+// ── 各类别数据生成 ──
+
+function genFrac(): TableDataset {
+  const stages = [
+    { name: '前置液', minutes: 18, rate: 6.0, sr: 0 },
+    { name: '携砂液', minutes: 46, rate: 6.5, sr: 8 },
+    { name: '顶替液', minutes: 10, rate: 6.2, sr: 0 },
+  ]
+  const rng = makeRng(20260728)
   const start = new Date('2026-07-28T09:30:00')
-  let seed = 20260728
-
-  const rnd = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return (seed % 1000) / 1000 }
-
-  FRAC_STAGES.forEach(stage => {
+  const rows: Record<string, unknown>[] = []
+  let elapsed = 0, cumFluid = 0, cumSand = 0
+  stages.forEach(stage => {
     for (let m = 0; m < stage.minutes; m += 2) {
       const t = new Date(start.getTime() + elapsed * 60000)
-      const rate = +(stage.rate + (rnd() - 0.5) * 0.6).toFixed(2)
-      // 携砂阶段砂比逐步爬坡
+      const rate = +(stage.rate + (rng() - 0.5) * 0.6).toFixed(2)
       const ramp = stage.sr > 0 ? Math.min(1, m / (stage.minutes * 0.5)) : 0
-      const sandRatio = +(stage.sr * (0.5 + ramp * 0.5) + (stage.sr > 0 ? (rnd() - 0.5) * 1.2 : 0)).toFixed(1)
-      const tubing = +(52 + ramp * 8 + (rnd() - 0.5) * 3).toFixed(1)
-      const casing = +(tubing - 8 - rnd() * 2).toFixed(1)
+      const sandRatio = +(stage.sr * (0.5 + ramp * 0.5) + (stage.sr > 0 ? (rng() - 0.5) * 1.2 : 0)).toFixed(1)
+      const tubing = +(52 + ramp * 8 + (rng() - 0.5) * 3).toFixed(1)
+      const casing = +(tubing - 8 - rng() * 2).toFixed(1)
       const sandRate = +(rate * 1000 * (sandRatio / 100)).toFixed(0)
       cumFluid = +(cumFluid + rate * 2).toFixed(1)
-      cumSand = +(cumSand + (sandRate * 2) / 1500).toFixed(2) // 砂密度≈1.5t/m³
-      const status: FracRow['status'] =
-        tubing > 58 ? 'alarm' : sandRatio > 7.5 ? 'warning' : 'normal'
-      rows.push({
-        time: t.toTimeString().slice(0, 8),
-        elapsed: elapsed,
-        rate,
-        tubingPressure: tubing,
-        casingPressure: casing,
-        sandRatio,
-        sandRate,
-        cumFluid,
-        cumSand,
-        stage: stage.name,
-        status,
-      })
+      cumSand = +(cumSand + (sandRate * 2) / 1500).toFixed(2)
+      const level: StatusCell['level'] = tubing > 58 ? 'alarm' : sandRatio > 7.5 ? 'warning' : 'normal'
+      const status: StatusCell = { level, label: level === 'alarm' ? '压力超限' : level === 'warning' ? '砂比偏高' : '正常' }
+      rows.push({ time: t.toTimeString().slice(0, 8), elapsed, rate, tubing, casing, sandRatio, sandRate, cumFluid, cumSand, stage: stage.name, status })
       elapsed += 2
     }
   })
-  return rows
+  const nums = rows.map(r => r as { tubing: number; sandRatio: number; rate: number; status: StatusCell })
+  return {
+    id: 'frac', name: '施工曲线', icon: 'timeline', hasStatus: true,
+    columns: [
+      { key: 'time', label: '施工时间', type: 'mono', sticky: true },
+      { key: 'elapsed', label: '时长', unit: 'min', type: 'num' },
+      { key: 'rate', label: '施工排量', unit: 'm³/min', type: 'num', decimals: 2 },
+      { key: 'tubing', label: '油压', unit: 'MPa', type: 'num', decimals: 1 },
+      { key: 'casing', label: '套压', unit: 'MPa', type: 'num', decimals: 1 },
+      { key: 'sandRatio', label: '砂比', unit: '%', type: 'num', decimals: 1 },
+      { key: 'sandRate', label: '瞬时砂量', unit: 'kg/min', type: 'num' },
+      { key: 'cumFluid', label: '累计液量', unit: 'm³', type: 'num', decimals: 1 },
+      { key: 'cumSand', label: '累计砂量', unit: 'm³', type: 'num', decimals: 2 },
+      { key: 'stage', label: '施工阶段', type: 'tag' },
+      { key: 'status', label: '状态', type: 'status' },
+    ],
+    rows,
+    summary: [
+      { label: '累计液量', value: (rows[rows.length - 1] as { cumFluid: number }).cumFluid, unit: 'm³' },
+      { label: '累计砂量', value: (rows[rows.length - 1] as { cumSand: number }).cumSand, unit: 'm³' },
+      { label: '平均排量', value: +(nums.reduce((s, r) => s + r.rate, 0) / nums.length).toFixed(2), unit: 'm³/min' },
+      { label: '最高油压', value: Math.max(...nums.map(r => r.tubing)), unit: 'MPa', color: '#c62828' },
+      { label: '最高砂比', value: Math.max(...nums.map(r => r.sandRatio)), unit: '%', color: '#e65100' },
+      { label: '异常点', value: nums.filter(r => r.status.level !== 'normal').length, unit: '个', color: '#c62828' },
+    ],
+  }
 }
 
-const FRAC_DATA = genFracData()
-
-const STAGE_COLOR: Record<string, string> = {
-  前置液: '#1565c0',
-  携砂液: '#e65100',
-  顶替液: '#2e7d32',
+function genProduction(): TableDataset {
+  const rng = makeRng(11002026)
+  const base = new Date('2026-01-01')
+  const rows: Record<string, unknown>[] = []
+  let cumGas = 0
+  for (let i = 0; i < 90; i++) {
+    const d = new Date(base); d.setDate(d.getDate() + i)
+    const shutIn = i % 21 === 0
+    const measure = i % 30 === 15
+    const gas = shutIn ? +(1.5 + rng()).toFixed(2) : +(3.2 + (rng() - 0.5) * 0.8).toFixed(2)
+    const water = shutIn ? +(rng() * 2).toFixed(1) : +(8 + (rng() - 0.5) * 3).toFixed(1)
+    const oilP = shutIn ? +(12 + rng() * 2).toFixed(1) : +(20 + (rng() - 0.5) * 3).toFixed(1)
+    const casP = +(oilP + 2 + rng() * 2).toFixed(1)
+    cumGas = +(cumGas + gas).toFixed(2)
+    rows.push({
+      date: `${d.getMonth() + 1}-${String(d.getDate()).padStart(2, '0')}`,
+      gas, water, oilP, casP, cumGas,
+      state: shutIn ? '关井' : measure ? '措施作业' : '正常生产',
+    })
+  }
+  const gasArr = rows.map(r => (r as { gas: number }).gas)
+  return {
+    id: 'production', name: '生产数据', icon: 'oil_barrel',
+    columns: [
+      { key: 'date', label: '日期', type: 'mono', sticky: true },
+      { key: 'gas', label: '日产气量', unit: '万m³', type: 'num', decimals: 2 },
+      { key: 'water', label: '日产水量', unit: 'm³', type: 'num', decimals: 1 },
+      { key: 'oilP', label: '油压', unit: 'MPa', type: 'num', decimals: 1 },
+      { key: 'casP', label: '套压', unit: 'MPa', type: 'num', decimals: 1 },
+      { key: 'cumGas', label: '累计产气量', unit: '万m³', type: 'num', decimals: 2 },
+      { key: 'state', label: '生产状态', type: 'tag' },
+    ],
+    rows,
+    summary: [
+      { label: '生产天数', value: rows.length, unit: '天' },
+      { label: '累计产气', value: (rows[rows.length - 1] as { cumGas: number }).cumGas, unit: '万m³', color: '#1565c0' },
+      { label: '平均日产气', value: +(gasArr.reduce((s, v) => s + v, 0) / gasArr.length).toFixed(2), unit: '万m³' },
+      { label: '峰值日产气', value: Math.max(...gasArr), unit: '万m³', color: '#2e7d32' },
+      { label: '关井天数', value: rows.filter(r => (r as { state: string }).state === '关井').length, unit: '天', color: '#e65100' },
+    ],
+  }
 }
 
-function FracTable({ well, onWellChange }: { well: string; onWellChange: (w: string) => void }) {
-  const [stageFilter, setStageFilter] = useState<string>('全部')
+function genLogging(): TableDataset {
+  const rng = makeRng(30302026)
+  const rows: Record<string, unknown>[] = []
+  for (let i = 0; i < 80; i++) {
+    const depth = +(2500 + i * 2.5).toFixed(1)
+    const gr = +(40 + Math.sin(i * 0.3) * 30 + rng() * 20).toFixed(1)
+    const rt = +Math.max(0.5, 10 + Math.sin(i * 0.2) * 80 + rng() * 40).toFixed(1)
+    const ac = +(90 + Math.sin(i * 0.25) * 25 + rng() * 15).toFixed(1)
+    const den = +(2.3 + Math.sin(i * 0.18) * 0.25 + rng() * 0.1).toFixed(2)
+    const nphi = +((0.12 + Math.sin(i * 0.22) * 0.08 + rng() * 0.04) * 100).toFixed(1)
+    const por = +((0.18 - (den - 2.3) * 0.3 + rng() * 0.02) * 100).toFixed(1)
+    rows.push({ depth, gr, rt, ac, den, nphi, por })
+  }
+  const porArr = rows.map(r => (r as { por: number }).por)
+  return {
+    id: 'logging', name: '测井数据', icon: 'sensors',
+    columns: [
+      { key: 'depth', label: '深度', unit: 'm', type: 'mono', sticky: true, decimals: 1 },
+      { key: 'gr', label: '自然伽马', unit: 'API', type: 'num', decimals: 1 },
+      { key: 'rt', label: '深侧向电阻率', unit: 'Ω·m', type: 'num', decimals: 1 },
+      { key: 'ac', label: '声波时差', unit: 'μs/ft', type: 'num', decimals: 1 },
+      { key: 'den', label: '密度', unit: 'g/cm³', type: 'num', decimals: 2 },
+      { key: 'nphi', label: '中子孔隙度', unit: '%', type: 'num', decimals: 1 },
+      { key: 'por', label: '计算孔隙度', unit: '%', type: 'num', decimals: 1 },
+    ],
+    rows,
+    summary: [
+      { label: '采样点数', value: rows.length, unit: '点' },
+      { label: '深度范围', value: `${rows[0] ? (rows[0] as { depth: number }).depth : 0}~${(rows[rows.length - 1] as { depth: number }).depth}`, unit: 'm' },
+      { label: '平均孔隙度', value: +(porArr.reduce((s, v) => s + v, 0) / porArr.length).toFixed(1), unit: '%', color: '#1565c0' },
+      { label: '最大孔隙度', value: Math.max(...porArr), unit: '%', color: '#2e7d32' },
+    ],
+  }
+}
+
+function genCore(): TableDataset {
+  const rng = makeRng(40402026)
+  const liths = ['煤岩', '泥岩', '砂岩', '灰岩']
+  const rows: Record<string, unknown>[] = []
+  for (let i = 0; i < 24; i++) {
+    const depth = +(2540 + i * 3.2 + rng() * 1.5).toFixed(2)
+    const por = +(4 + rng() * 14).toFixed(2)
+    const perm = +(0.01 + rng() * rng() * 12).toFixed(3)
+    const gasContent = +(6 + rng() * 18).toFixed(2)
+    const grainDen = +(2.5 + rng() * 0.35).toFixed(2)
+    rows.push({ sample: `LGPC1-${String(i + 1).padStart(2, '0')}`, depth, por, perm, gasContent, grainDen, lith: liths[Math.floor(rng() * liths.length)] })
+  }
+  const porArr = rows.map(r => (r as { por: number }).por)
+  const gasArr = rows.map(r => (r as { gasContent: number }).gasContent)
+  return {
+    id: 'core', name: '岩心实验', icon: 'science',
+    columns: [
+      { key: 'sample', label: '样品编号', type: 'mono', sticky: true },
+      { key: 'depth', label: '取心深度', unit: 'm', type: 'num', decimals: 2 },
+      { key: 'por', label: '孔隙度', unit: '%', type: 'num', decimals: 2 },
+      { key: 'perm', label: '渗透率', unit: 'mD', type: 'num', decimals: 3 },
+      { key: 'gasContent', label: '含气量', unit: 'm³/t', type: 'num', decimals: 2 },
+      { key: 'grainDen', label: '颗粒密度', unit: 'g/cm³', type: 'num', decimals: 2 },
+      { key: 'lith', label: '岩性', type: 'tag' },
+    ],
+    rows,
+    summary: [
+      { label: '样品数', value: rows.length, unit: '个' },
+      { label: '平均孔隙度', value: +(porArr.reduce((s, v) => s + v, 0) / porArr.length).toFixed(2), unit: '%', color: '#1565c0' },
+      { label: '平均含气量', value: +(gasArr.reduce((s, v) => s + v, 0) / gasArr.length).toFixed(2), unit: 'm³/t', color: '#2e7d32' },
+      { label: '最大含气量', value: Math.max(...gasArr), unit: 'm³/t', color: '#e65100' },
+    ],
+  }
+}
+
+function genStrata(): TableDataset {
+  const raw = [
+    { name: 'T2z', top: 502, bottom: 690, desc: '灰色泥岩夹薄层砂岩', facies: '滨浅湖' },
+    { name: 'T1h', top: 690, bottom: 925, desc: '深灰色泥岩、粉砂岩互层', facies: '三角洲' },
+    { name: 'T1l', top: 925, bottom: 1200, desc: '灰黑色页岩夹煤线', facies: '分流河道' },
+    { name: 'C2b', top: 1200, bottom: 1685, desc: '煤岩、碳质泥岩', facies: '河道' },
+    { name: 'C1t', top: 1685, bottom: 2110, desc: '灰色砂岩夹泥岩', facies: '三角洲' },
+    { name: 'O2', top: 2110, bottom: 2540, desc: '浅灰色灰岩', facies: '滨浅湖' },
+  ]
+  const rows = raw.map(r => ({ name: r.name, top: r.top, bottom: r.bottom, thick: +(r.bottom - r.top).toFixed(1), desc: r.desc, facies: r.facies }))
+  const thickArr = rows.map(r => r.thick)
+  return {
+    id: 'strata', name: '地层分层', icon: 'layers',
+    columns: [
+      { key: 'name', label: '层位', type: 'mono', sticky: true },
+      { key: 'top', label: '顶深', unit: 'm', type: 'num', decimals: 1 },
+      { key: 'bottom', label: '底深', unit: 'm', type: 'num', decimals: 1 },
+      { key: 'thick', label: '厚度', unit: 'm', type: 'num', decimals: 1 },
+      { key: 'desc', label: '岩性简述', type: 'text' },
+      { key: 'facies', label: '沉积相', type: 'tag' },
+    ],
+    rows,
+    summary: [
+      { label: '分层数', value: rows.length, unit: '层' },
+      { label: '解释总厚', value: +thickArr.reduce((s, v) => s + v, 0).toFixed(1), unit: 'm', color: '#1565c0' },
+      { label: '最厚层段', value: Math.max(...thickArr), unit: 'm', color: '#2e7d32' },
+      { label: '顶/底深', value: `${rows[0].top}~${rows[rows.length - 1].bottom}`, unit: 'm' },
+    ],
+  }
+}
+
+const TABLE_DATASETS: TableDataset[] = [genFrac(), genProduction(), genLogging(), genCore(), genStrata()]
+
+function fmtNum(v: unknown, decimals?: number): string {
+  const n = typeof v === 'number' ? v : Number(v)
+  if (Number.isNaN(n)) return String(v ?? '—')
+  return decimals != null ? n.toFixed(decimals) : String(n)
+}
+
+function DataTable({ well, onWellChange }: { well: string; onWellChange: (w: string) => void }) {
+  const [datasetId, setDatasetId] = useState<string>('frac')
   const [onlyAbnormal, setOnlyAbnormal] = useState(false)
 
-  const rows = FRAC_DATA.filter(r =>
-    (stageFilter === '全部' || r.stage === stageFilter) &&
-    (!onlyAbnormal || r.status !== 'normal')
-  )
-
-  // 汇总统计
-  const last = FRAC_DATA[FRAC_DATA.length - 1]
-  const maxPressure = Math.max(...FRAC_DATA.map(r => r.tubingPressure))
-  const maxSandRatio = Math.max(...FRAC_DATA.map(r => r.sandRatio))
-  const avgRate = +(FRAC_DATA.reduce((s, r) => s + r.rate, 0) / FRAC_DATA.length).toFixed(2)
-  const abnormalCount = FRAC_DATA.filter(r => r.status !== 'normal').length
+  const ds = TABLE_DATASETS.find(d => d.id === datasetId) ?? TABLE_DATASETS[0]
+  const rows = ds.hasStatus && onlyAbnormal
+    ? ds.rows.filter(r => (r.status as StatusCell)?.level !== 'normal')
+    : ds.rows
 
   return (
     <div className="frac-table-wrap">
       {/* 工具栏 */}
       <div className="frac-toolbar">
         <div className="frac-toolbar-left">
+          <span className="viz-label">数据类别：</span>
+          <select className="viz-select" value={datasetId} onChange={e => { setDatasetId(e.target.value); setOnlyAbnormal(false) }}>
+            {TABLE_DATASETS.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+          </select>
           <span className="viz-label">井名：</span>
           <select className="viz-select" value={well} onChange={e => onWellChange(e.target.value)}>
             {WELL_LIST.map(w => <option key={w.id} value={w.name}>{w.name}</option>)}
           </select>
-          <span className="viz-label">施工阶段：</span>
-          <select className="viz-select" value={stageFilter} onChange={e => setStageFilter(e.target.value)}>
-            <option>全部</option>
-            {FRAC_STAGES.map(s => <option key={s.name} value={s.name}>{s.name}</option>)}
-          </select>
-          <label className="frac-check-label">
-            <input type="checkbox" className="field-tree-checkbox" checked={onlyAbnormal}
-              onChange={e => setOnlyAbnormal(e.target.checked)} />
-            仅看异常
-          </label>
+          {ds.hasStatus && (
+            <label className="frac-check-label">
+              <input type="checkbox" className="field-tree-checkbox" checked={onlyAbnormal}
+                onChange={e => setOnlyAbnormal(e.target.checked)} />
+              仅看异常
+            </label>
+          )}
         </div>
         <div className="frac-toolbar-right">
           <span className="frac-count">共 {rows.length} 条</span>
@@ -779,30 +957,14 @@ function FracTable({ well, onWellChange }: { well: string; onWellChange: (w: str
 
       {/* 汇总指标 */}
       <div className="frac-summary">
-        <div className="frac-summary-item">
-          <span className="frac-summary-label">累计液量</span>
-          <span className="frac-summary-value">{last.cumFluid} <em>m³</em></span>
-        </div>
-        <div className="frac-summary-item">
-          <span className="frac-summary-label">累计砂量</span>
-          <span className="frac-summary-value">{last.cumSand} <em>m³</em></span>
-        </div>
-        <div className="frac-summary-item">
-          <span className="frac-summary-label">平均排量</span>
-          <span className="frac-summary-value">{avgRate} <em>m³/min</em></span>
-        </div>
-        <div className="frac-summary-item">
-          <span className="frac-summary-label">最高油压</span>
-          <span className="frac-summary-value" style={{ color: '#c62828' }}>{maxPressure} <em>MPa</em></span>
-        </div>
-        <div className="frac-summary-item">
-          <span className="frac-summary-label">最高砂比</span>
-          <span className="frac-summary-value" style={{ color: '#e65100' }}>{maxSandRatio} <em>%</em></span>
-        </div>
-        <div className="frac-summary-item">
-          <span className="frac-summary-label">异常点</span>
-          <span className="frac-summary-value" style={{ color: abnormalCount ? '#c62828' : 'inherit' }}>{abnormalCount} <em>个</em></span>
-        </div>
+        {ds.summary.map((s, i) => (
+          <div className="frac-summary-item" key={i}>
+            <span className="frac-summary-label">{s.label}</span>
+            <span className="frac-summary-value" style={s.color ? { color: s.color } : undefined}>
+              {s.value} {s.unit && <em>{s.unit}</em>}
+            </span>
+          </div>
+        ))}
       </div>
 
       {/* 表格 */}
@@ -810,43 +972,41 @@ function FracTable({ well, onWellChange }: { well: string; onWellChange: (w: str
         <table className="frac-table">
           <thead>
             <tr>
-              <th className="frac-th frac-th--sticky">施工时间</th>
-              <th className="frac-th">时长<br /><span className="frac-th-unit">min</span></th>
-              <th className="frac-th">施工排量<br /><span className="frac-th-unit">m³/min</span></th>
-              <th className="frac-th">油压<br /><span className="frac-th-unit">MPa</span></th>
-              <th className="frac-th">套压<br /><span className="frac-th-unit">MPa</span></th>
-              <th className="frac-th">砂比<br /><span className="frac-th-unit">%</span></th>
-              <th className="frac-th">瞬时砂量<br /><span className="frac-th-unit">kg/min</span></th>
-              <th className="frac-th">累计液量<br /><span className="frac-th-unit">m³</span></th>
-              <th className="frac-th">累计砂量<br /><span className="frac-th-unit">m³</span></th>
-              <th className="frac-th">施工阶段</th>
-              <th className="frac-th">状态</th>
+              {ds.columns.map(c => (
+                <th key={c.key} className={`frac-th${c.sticky ? ' frac-th--sticky' : ''}`}>
+                  {c.label}{c.unit && <><br /><span className="frac-th-unit">{c.unit}</span></>}
+                </th>
+              ))}
             </tr>
           </thead>
           <tbody>
-            {rows.map((r, i) => (
-              <tr key={i} className={`frac-tr frac-tr--${r.status}`}>
-                <td className="frac-td frac-td--sticky frac-td--mono">{r.time}</td>
-                <td className="frac-td frac-td--num">{r.elapsed}</td>
-                <td className="frac-td frac-td--num">{r.rate.toFixed(2)}</td>
-                <td className="frac-td frac-td--num" style={{ color: r.status === 'alarm' ? '#c62828' : undefined, fontWeight: r.status === 'alarm' ? 700 : undefined }}>{r.tubingPressure.toFixed(1)}</td>
-                <td className="frac-td frac-td--num">{r.casingPressure.toFixed(1)}</td>
-                <td className="frac-td frac-td--num" style={{ color: r.status === 'warning' ? '#e65100' : undefined, fontWeight: r.status === 'warning' ? 700 : undefined }}>{r.sandRatio.toFixed(1)}</td>
-                <td className="frac-td frac-td--num">{r.sandRate}</td>
-                <td className="frac-td frac-td--num">{r.cumFluid.toFixed(1)}</td>
-                <td className="frac-td frac-td--num">{r.cumSand.toFixed(2)}</td>
-                <td className="frac-td">
-                  <span className="frac-stage-tag" style={{ color: STAGE_COLOR[r.stage], background: `${STAGE_COLOR[r.stage]}1a` }}>{r.stage}</span>
-                </td>
-                <td className="frac-td">
-                  {r.status === 'normal' && <span className="frac-status frac-status--normal">正常</span>}
-                  {r.status === 'warning' && <span className="frac-status frac-status--warning">砂比偏高</span>}
-                  {r.status === 'alarm' && <span className="frac-status frac-status--alarm">压力超限</span>}
-                </td>
-              </tr>
-            ))}
+            {rows.map((r, i) => {
+              const level = (r.status as StatusCell)?.level
+              return (
+                <tr key={i} className={`frac-tr${level ? ` frac-tr--${level}` : ''}`}>
+                  {ds.columns.map(c => {
+                    const v = r[c.key]
+                    if (c.type === 'tag') {
+                      const val = String(v)
+                      return <td key={c.key} className="frac-td"><span className="frac-stage-tag" style={{ color: tagColor(val), background: `${tagColor(val)}1a` }}>{val}</span></td>
+                    }
+                    if (c.type === 'status') {
+                      const st = v as StatusCell
+                      return <td key={c.key} className="frac-td"><span className={`frac-status frac-status--${st.level}`}>{st.label}</span></td>
+                    }
+                    if (c.type === 'num') {
+                      const alarmCol = level === 'alarm' && c.key === 'tubing'
+                      const warnCol = level === 'warning' && c.key === 'sandRatio'
+                      return <td key={c.key} className="frac-td frac-td--num" style={alarmCol ? { color: '#c62828', fontWeight: 700 } : warnCol ? { color: '#e65100', fontWeight: 700 } : undefined}>{fmtNum(v, c.decimals)}</td>
+                    }
+                    if (c.type === 'mono') return <td key={c.key} className={`frac-td frac-td--mono${c.sticky ? ' frac-td--sticky' : ''}`}>{c.decimals != null ? fmtNum(v, c.decimals) : String(v)}</td>
+                    return <td key={c.key} className={`frac-td${c.sticky ? ' frac-td--sticky' : ''}`}>{String(v)}</td>
+                  })}
+                </tr>
+              )
+            })}
             {rows.length === 0 && (
-              <tr><td colSpan={11} className="frac-empty">无符合条件的施工记录</td></tr>
+              <tr><td colSpan={ds.columns.length} className="frac-empty">无符合条件的数据记录</td></tr>
             )}
           </tbody>
         </table>
