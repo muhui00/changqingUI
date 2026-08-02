@@ -305,40 +305,42 @@ export function StepToolsPanel({ datasetId, qced = false, onQCComplete, activeSt
                 aria-label={`${step.label}，${step.status}，点击${isExpanded ? '收起' : '展开'}工具`}
                 onClick={() => handleStepClick(step.type)}
               >
-                <div className="step-card-left">
-                  <md-icon class="step-type-icon">{step.icon}</md-icon>
-                  <div className="step-card-info">
+                <md-icon class="step-type-icon">{step.icon}</md-icon>
+                <div className="step-card-info">
+                  {/* 第一行：标题 + 分数 + 展开箭头 */}
+                  <div className="step-title-row">
                     <span className="md-typescale-label-medium step-name">{step.label}</span>
-                    <div className="step-meta-row">
-                      <span
-                        className="step-status-chip md-typescale-label-small"
-                        style={{ color: ss.color, background: ss.bg }}
-                      >
-                        <md-icon class="step-status-icon">{ss.icon}</md-icon>
-                        {step.status}
-                      </span>
+                    <div className="step-title-right">
+                      {step.score !== undefined ? (
+                        <span
+                          className="md-typescale-title-small step-score"
+                          style={{
+                            color:
+                              step.score >= 90
+                                ? 'var(--app-color-success)'
+                                : step.score >= 75
+                                ? 'var(--app-color-warning)'
+                                : 'var(--md-sys-color-error)',
+                          }}
+                        >
+                          {step.score}
+                        </span>
+                      ) : (
+                        <span className="md-typescale-label-small step-no-score">—</span>
+                      )}
+                      <md-icon class="step-expand-icon">{isExpanded ? 'expand_less' : 'expand_more'}</md-icon>
                     </div>
                   </div>
-                </div>
-                <div className="step-card-right">
-                  {step.score !== undefined ? (
+                  {/* 第二行（左下）：状态 */}
+                  <div className="step-meta-row">
                     <span
-                      className="md-typescale-title-small step-score"
-                      style={{
-                        color:
-                          step.score >= 90
-                            ? 'var(--app-color-success)'
-                            : step.score >= 75
-                            ? 'var(--app-color-warning)'
-                            : 'var(--md-sys-color-error)',
-                      }}
+                      className="step-status-chip md-typescale-label-small"
+                      style={{ color: ss.color, background: ss.bg }}
                     >
-                      {step.score}
+                      <md-icon class="step-status-icon">{ss.icon}</md-icon>
+                      {step.status}
                     </span>
-                  ) : (
-                    <span className="md-typescale-label-small step-no-score">—</span>
-                  )}
-                  <md-icon class="step-expand-icon">{isExpanded ? 'expand_less' : 'expand_more'}</md-icon>
+                  </div>
                 </div>
               </button>
 
