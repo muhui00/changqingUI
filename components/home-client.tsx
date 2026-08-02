@@ -17,6 +17,10 @@ type AppPage = 'overview' | 'report-center' | 'report-preview' | 'qc-workspace' 
 export function HomeClient() {
   const [datasets, setDatasets] = useState<Dataset[]>(MOCK_DATASETS)
   const [selectedDatasetId, setSelectedDatasetId] = useState<string>('1')
+  // 已完成质检的数据集：初始化中 / 创建失败的数据集尚无质检数据
+  const [qcedIds, setQcedIds] = useState<Set<string>>(
+    () => new Set(MOCK_DATASETS.filter(d => d.status !== '初始化中' && d.status !== '创建失败').map(d => d.id)),
+  )
   const [hoveredCard, setHoveredCard] = useState<QCCardType | null>(null)
   const [activeStep, setActiveStep] = useState<QCCardType | null>(null)
   const [datasetCollapsed, setDatasetCollapsed] = useState(false)
@@ -26,6 +30,12 @@ export function HomeClient() {
   const [previewReportId, setPreviewReportId] = useState<string>('')
   const [createReportOpen, setCreateReportOpen] = useState(false)
   const [activeWorkspace, setActiveWorkspace] = useState<QCWorkspaceType>('consistency')
+
+  // 质检流程完成：标记该数据集已质检，状态置为待复核
+  const handleQCComplete = (id: string) => {
+    setQcedIds(prev => { const n = new Set(prev); n.add(id); return n })
+    setDatasets(prev => prev.map(d => (d.id === id ? { ...d, status: '待复核' } : d)))
+  }
 
   const handleCardClick = (type: QCCardType) => {
     setActiveStep(type)
@@ -127,6 +137,9 @@ export function HomeClient() {
             />
           </main>
           <StepToolsPanel
+            datasetId={selectedDatasetId}
+            qced={qcedIds.has(selectedDatasetId)}
+            onQCComplete={() => handleQCComplete(selectedDatasetId)}
             activeStep={activeWorkspace as QCCardType}
             onStepClick={(type) => handleSwitchWorkspaceTab(type as QCWorkspaceType)}
             onCreateReport={() => setCreateReportOpen(true)}
@@ -155,9 +168,13 @@ export function HomeClient() {
         <FieldTree collapsed={fieldCollapsed} onToggleCollapse={() => setFieldCollapsed(v => !v)} />
         <main className="content-area" id="main-content">
           <QCOverview onCardClick={handleCardClick} hoveredCard={hoveredCard}
-            datasetId={selectedDatasetId} datasetMeta={datasets.find(d => d.id === selectedDatasetId)} />
+            datasetId={selectedDatasetId} datasetMeta={datasets.find(d => d.id === selectedDatasetId)}
+            qced={qcedIds.has(selectedDatasetId)} />
         </main>
         <StepToolsPanel
+          datasetId={selectedDatasetId}
+          qced={qcedIds.has(selectedDatasetId)}
+          onQCComplete={() => handleQCComplete(selectedDatasetId)}
           activeStep={activeStep}
           onStepClick={(type) => {
             setActiveStep(type)

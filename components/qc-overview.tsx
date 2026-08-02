@@ -11,6 +11,7 @@ interface QCOverviewProps {
   hoveredCard?: QCCardType | null
   datasetId?: string
   datasetMeta?: Dataset
+  qced?: boolean
 }
 
 type RadarDim = { label: string; score: number; anomalyCount: number; reviewedCount: number }
@@ -338,7 +339,7 @@ function BoxPlotChart() {
   )
 }
 
-// 相关矩阵缩略图 — CSS Grid，充满容器，无拉伸
+// 相关矩阵缩略图 ��� CSS Grid，充满容器，无拉伸
 function CorrelationMatrix() {
   const fields = ['加砂量', '砂比', '携砂液', '日产气', '气油比']
   const matrix = [
@@ -467,11 +468,11 @@ function generateDatasetContent(datasetId: string): DatasetContent {
   }
 }
 
-export function QCOverview({ onCardClick, hoveredCard, datasetId = '1', datasetMeta }: QCOverviewProps) {
+export function QCOverview({ onCardClick, hoveredCard, datasetId = '1', datasetMeta, qced = true }: QCOverviewProps) {
   const getScoreLevel = (s: number) => (s >= 90 ? '优' : s >= 80 ? '良' : s >= 70 ? '中' : '差')
   const getScoreColor = (s: number) => (s >= 90 ? 'var(--app-color-success)' : s >= 75 ? 'var(--app-color-warning)' : 'var(--md-sys-color-error)')
 
-  // 当前数据集元信息（优先使用父级传入的实时元信息，兜底静态列表）+ 质检内容
+  // 当前数据集元信息（优先使用父级传入的实时元信息，兜底静态列表）
   const meta = datasetMeta ?? MOCK_DATASETS.find((d) => d.id === datasetId)
 
   // 未选择任何数据集 → 空状态
@@ -490,6 +491,35 @@ export function QCOverview({ onCardClick, hoveredCard, datasetId = '1', datasetM
           <div className="md-typescale-title-small qc-empty-title">暂无质检数据</div>
           <div className="md-typescale-body-medium qc-empty-desc">
             请从左侧选择一个数据集以查看质量分析结果。
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // 尚未完成质检（初始化中 / 新建数据集）→ 初始化空状态，仅展示头部
+  if (!qced) {
+    return (
+      <div className="qc-overview">
+        <section className="overview-header" aria-label="数据集概览">
+          <div className="overview-meta">
+            <div className="overview-meta-left">
+              <h2 className="md-typescale-title-medium overview-dataset-name">
+                {meta?.name ?? '未命名数据集'}
+              </h2>
+              <div className="overview-tags">
+                {meta && <span className="overview-tag overview-tag--version">{meta.version}</span>}
+                {meta && <span className="overview-tag overview-tag--status">{meta.status}</span>}
+                {meta && <span className="overview-tag overview-tag--date">更新: {meta.updatedAt}</span>}
+              </div>
+            </div>
+          </div>
+        </section>
+        <div className="qc-empty-state" role="status">
+          <md-icon class="qc-empty-icon">science</md-icon>
+          <div className="md-typescale-title-small qc-empty-title">数据集初始化中，尚未质检</div>
+          <div className="md-typescale-body-medium qc-empty-desc">
+            该数据集暂无质检数据。请点击右侧「开始质检」，系统将按一致性、完整性、分布范围、相关性四个步骤依次执行，完成后此处将展示质量分析结果。
           </div>
         </div>
       </div>

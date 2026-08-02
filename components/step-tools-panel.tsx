@@ -142,6 +142,9 @@ const TOOL_STATUS_STYLE: Record<ToolStatus, { color: string; dot: string }> = {
 }
 
 interface StepToolsPanelProps {
+  datasetId?: string
+  qced?: boolean
+  onQCComplete?: () => void
   activeStep?: QCCardType | null
   onStepClick?: (type: QCCardType) => void
   onCreateReport?: () => void
@@ -149,42 +152,85 @@ interface StepToolsPanelProps {
   onToggleCollapse?: () => void
 }
 
-export function StepToolsPanel({ activeStep, onStepClick, onCreateReport, collapsed, onToggleCollapse }: StepToolsPanelProps) {
+export function StepToolsPanel({ datasetId, qced = false, onQCComplete, activeStep, onStepClick, onCreateReport, collapsed, onToggleCollapse }: StepToolsPanelProps) {
   const [expandedStep, setExpandedStep] = useState<QCCardType | null>('consistency')
-  const [steps, setSteps] = useState<Step[]>(INITIAL_STEPS)
+  const [steps, setSteps] = useState<Step[]>(qced ? buildCompletedSteps('—') : INITIAL_STEPS)
   const [running, setRunning] = useState(false)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const runningRef = useRef(false)
+
+  const stopTimer = () => {
+    if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null }
+    runningRef.current = false
+  }
 
   // 卸载时清理定时器
-  useEffect(() => () => { if (timerRef.current) clearInterval(timerRef.current) }, [])
+  useEffect(() => () => stopTimer(), [])
+
+  // 切换数据集：停止进行中的质检，按该数据集是否已质检重置步骤
+  useEffect(() => {
+    stopTimer()
+    setRunning(false)
+    setSteps(qced ? buildCompletedSteps('—') : INITIAL_STEPS)
+    // 仅在数据集变化时重置（qced 变为 true 由本组件质检完成触发，不应回滚 lastRun）
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [datasetId])
 
   const handleStepClick = (type: QCCardType) => {
     setExpandedStep(expandedStep === type ? null : type)
     onStepClick?.(type)
   }
 
-  // 开始 / 重新质检流程
+  // 开始 / 重新质检流程 —— 一致性→完整性→分布范围→相关性 依次顺序执行
   const handleStartQC = () => {
-    if (running) return
+    if (runningRef.current) return
+    runningRef.current = true
+    stopTimer()
+    runningRef.current = true // stopTimer 会置 false，此处恢复
     setRunning(true)
-    // 所有步骤置为执行中、进度归零
-    setSteps(STEPS.map((s) => ({
-      ...s, status: '执行中', progress: 0, score: undefined, anomalyCount: 0, reviewCount: 0, lastRun: '执行中',
-    })))
+
+    const now = new Date()
+    const runTime = `${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
+    const finals = buildCompletedSteps(runTime)
+    const total = STEPS.length
+
+    // 本地工作副本作为唯一数据源，避免函数式更新器竞态
+    const working: Step[] = INITIAL_STEPS.map((s) => ({ ...s }))
+    working[0] = { ...working[0], status: '执行中', progress: 0, lastRun: '执行中' }
+    setSteps(working.map((s) => ({ ...s })))
+    setExpandedStep(STEPS[0].type)
+
+    let idx = 0
     let pct = 0
+
     timerRef.current = setInterval(() => {
-      pct += 5
-      if (pct >= 100) {
-        if (timerRef.current) clearInterval(timerRef.current)
-        timerRef.current = null
-        const now = new Date()
-        const runTime = `${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
-        setSteps(buildCompletedSteps(runTime))
-        setRunning(false)
-      } else {
-        setSteps((prev) => prev.map((s) => ({ ...s, progress: pct })))
+      pct += 10
+      if (pct < 100) {
+        // 当前步骤进度推进
+        working[idx] = { ...working[idx], progress: pct }
+        setSteps(working.map((s) => ({ ...s })))
+        return
       }
-    }, 150)
+
+      // 当前步骤完成 → 落定最终结果
+      working[idx] = { ...finals[idx] }
+      idx += 1
+      pct = 0
+
+      if (idx >= total) {
+        // 四步全部完成
+        setSteps(working.map((s) => ({ ...s })))
+        stopTimer()
+        setRunning(false)
+        onQCComplete?.()
+        return
+      }
+
+      // 进入下一步骤
+      working[idx] = { ...working[idx], status: '执行中', progress: 0, lastRun: '执行中' }
+      setSteps(working.map((s) => ({ ...s })))
+      setExpandedStep(STEPS[idx].type)
+    }, 120)
   }
 
   const hasRunning = running
