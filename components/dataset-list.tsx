@@ -71,6 +71,8 @@ const STATUS_CONFIG: Record<DatasetStatus, { color: string; bg: string; label: s
 }
 
 interface DatasetListProps {
+  datasets: Dataset[]
+  onDatasetsChange: (datasets: Dataset[]) => void
   selectedId?: string
   onSelect: (id: string) => void
   collapsed: boolean
@@ -78,12 +80,11 @@ interface DatasetListProps {
   onViewReport?: (datasetId: string) => void
 }
 
-export function DatasetList({ selectedId, onSelect, collapsed, onToggleCollapse, onViewReport }: DatasetListProps) {
+export function DatasetList({ datasets, onDatasetsChange, selectedId, onSelect, collapsed, onToggleCollapse, onViewReport }: DatasetListProps) {
   const [search, setSearch] = useState('')
   const [filterStatus, setFilterStatus] = useState<DatasetStatus | '全部'>('全部')
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
-  const [datasets, setDatasets] = useState<Dataset[]>(MOCK_DATASETS)
 
   const filtered = datasets.filter((d) => {
     const matchSearch = d.name.includes(search)
@@ -153,7 +154,7 @@ export function DatasetList({ selectedId, onSelect, collapsed, onToggleCollapse,
             status: '初始化中',
             updatedAt: new Date().toISOString().slice(0, 10),
           }
-          setDatasets((prev) => [newDataset, ...prev])
+          onDatasetsChange([newDataset, ...datasets])
           onSelect(newId)
           // 2. 新建后数据集列表自动收起
           if (!collapsed) onToggleCollapse()
@@ -281,9 +282,9 @@ export function DatasetList({ selectedId, onSelect, collapsed, onToggleCollapse,
                     onClick={() => {
                       setMenuOpenId(null)
                       if (!window.confirm(`确定要删除数据集「${d.name}」吗？`)) return
-                      setDatasets((prev) => prev.filter((item) => item.id !== d.id))
+                      const rest = datasets.filter((item) => item.id !== d.id)
+                      onDatasetsChange(rest)
                       if (selectedId === d.id) {
-                        const rest = datasets.filter((item) => item.id !== d.id)
                         onSelect(rest[0]?.id ?? '')
                       }
                     }}

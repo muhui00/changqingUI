@@ -2,7 +2,7 @@
 
 import type { ReactNode } from 'react'
 import { RadarChart } from './radar-chart'
-import { MOCK_DATASETS } from './dataset-list'
+import { MOCK_DATASETS, type Dataset } from './dataset-list'
 
 export type QCCardType = 'consistency' | 'completeness' | 'distribution' | 'correlation'
 
@@ -10,6 +10,7 @@ interface QCOverviewProps {
   onCardClick: (type: QCCardType) => void
   hoveredCard?: QCCardType | null
   datasetId?: string
+  datasetMeta?: Dataset
 }
 
 type RadarDim = { label: string; score: number; anomalyCount: number; reviewedCount: number }
@@ -406,29 +407,81 @@ const METRIC_COLORS: Record<string, string> = {
   primary: 'var(--md-sys-color-primary)',
 }
 
-export function QCOverview({ onCardClick, hoveredCard, datasetId = '1' }: QCOverviewProps) {
+// 为未预置内容的数据集（如新建数据集）生成确定性的质检内容
+function generateDatasetContent(datasetId: string): DatasetContent {
+  // 基于 ID 的稳定伪随机种子
+  let seed = 0
+  for (let i = 0; i < datasetId.length; i++) seed = (seed * 31 + datasetId.charCodeAt(i)) >>> 0
+  const rand = (min: number, max: number) => {
+    seed = (seed * 1103515245 + 12345) & 0x7fffffff
+    return min + (seed % (max - min + 1))
+  }
+
+  const consistency = rand(78, 95)
+  const completeness = rand(80, 97)
+  const distribution = rand(76, 93)
+  const correlation = rand(74, 92)
+
+  const wells = rand(60, 220)
+  const fields = rand(18, 32)
+  const pending = rand(5, 60)
+  const handled = rand(30, 140)
+  const fixRate = ((handled / (handled + pending)) * 100).toFixed(1)
+
+  return {
+    radar: [
+      { label: '一致性', score: consistency, anomalyCount: rand(4, 20), reviewedCount: rand(3, 12) },
+      { label: '相关性', score: correlation, anomalyCount: rand(6, 25), reviewedCount: rand(4, 15) },
+      { label: '完整性', score: completeness, anomalyCount: rand(2, 14), reviewedCount: rand(2, 8) },
+      { label: '分布范围', score: distribution, anomalyCount: rand(5, 22), reviewedCount: rand(4, 10) },
+    ],
+    stats: [
+      { icon: 'oil_barrel', label: '覆盖井数', value: `${wells}口` },
+      { icon: 'view_column', label: '已选字段', value: `${fields}个` },
+      { icon: 'warning', label: '待复核异常', value: `${pending}条`, highlight: true },
+      { icon: 'check_circle', label: '已处理异常', value: `${handled}条` },
+      { icon: 'percent', label: '修复完成率', value: `${fixRate}%` },
+    ],
+    cards: {
+      consistency: { score: consistency, metrics: [
+        { label: '单位异常', value: rand(1, 9), color: 'error' },
+        { label: '量纲异常', value: rand(1, 6), color: 'error' },
+        { label: '量级异常', value: rand(1, 6), color: 'warning' },
+      ] },
+      completeness: { score: completeness, metrics: [
+        { label: '整体完整率', value: `${completeness}%`, color: 'success' },
+        { label: '必填缺失', value: rand(1, 20), color: 'error' },
+        { label: '连续缺失', value: rand(1, 13), color: 'warning' },
+      ] },
+      distribution: { score: distribution, metrics: [
+        { label: '统计异常', value: rand(3, 17), color: 'warning' },
+        { label: '物理越界', value: rand(1, 6), color: 'error' },
+        { label: '公式异常', value: rand(1, 8), color: 'warning' },
+      ] },
+      correlation: { score: correlation, metrics: [
+        { label: '字段组合数', value: rand(9, 24), color: 'primary' },
+        { label: '低相关组合', value: rand(1, 7), color: 'warning' },
+        { label: '高残差数', value: rand(2, 11), color: 'error' },
+      ] },
+    },
+  }
+}
+
+export function QCOverview({ onCardClick, hoveredCard, datasetId = '1', datasetMeta }: QCOverviewProps) {
   const getScoreLevel = (s: number) => (s >= 90 ? '优' : s >= 80 ? '良' : s >= 70 ? '中' : '差')
   const getScoreColor = (s: number) => (s >= 90 ? 'var(--app-color-success)' : s >= 75 ? 'var(--app-color-warning)' : 'var(--md-sys-color-error)')
 
-  // 当前数据集元信息 + 质检内容
-  const meta = MOCK_DATASETS.find((d) => d.id === datasetId)
-  const content = DATASET_CONTENT[datasetId]
+  // 当前数据集元信息（优先使用父级传入的实时元信息，兜底静态列表）+ 质检内容
+  const meta = datasetMeta ?? MOCK_DATASETS.find((d) => d.id === datasetId)
 
-  // 无质检结果（初始化中 / 新建 / 未质检）→ 空状态
-  if (!content) {
+  // 未选择任何数据集 → 空状态
+  if (!meta && !DATASET_CONTENT[datasetId]) {
     return (
       <div className="qc-overview">
         <section className="overview-header" aria-label="数据集概览">
           <div className="overview-meta">
             <div className="overview-meta-left">
-              <h2 className="md-typescale-title-medium overview-dataset-name">
-                {meta?.name ?? '未选择数据集'}
-              </h2>
-              <div className="overview-tags">
-                {meta && <span className="overview-tag overview-tag--version">{meta.version}</span>}
-                {meta && <span className="overview-tag overview-tag--status">{meta.status}</span>}
-                {meta && <span className="overview-tag overview-tag--date">更新: {meta.updatedAt}</span>}
-              </div>
+              <h2 className="md-typescale-title-medium overview-dataset-name">未选择数据集</h2>
             </div>
           </div>
         </section>
@@ -436,12 +489,15 @@ export function QCOverview({ onCardClick, hoveredCard, datasetId = '1' }: QCOver
           <md-icon class="qc-empty-icon">hourglass_empty</md-icon>
           <div className="md-typescale-title-small qc-empty-title">暂无质检数据</div>
           <div className="md-typescale-body-medium qc-empty-desc">
-            该数据集尚未完成质检，点击右侧「开始质检」生成质量分析结果。
+            请从左侧选择一个数据集以查看质量分析结果。
           </div>
         </div>
       </div>
     )
   }
+
+  // 预置数据集使用预置内容，其余（新建数据集）生成确定性内容
+  const content = DATASET_CONTENT[datasetId] ?? generateDatasetContent(datasetId)
 
   const RADAR_DATA = content.radar
   const overallScore = Math.round(

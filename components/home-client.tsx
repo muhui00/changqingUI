@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { DatasetList } from './dataset-list'
+import { DatasetList, MOCK_DATASETS, type Dataset } from './dataset-list'
 import { FieldTree } from './field-tree'
 import { QCOverview, type QCCardType } from './qc-overview'
 import { StepToolsPanel } from './step-tools-panel'
@@ -15,6 +15,7 @@ import { VisualizationPage } from './visualization-page'
 type AppPage = 'overview' | 'report-center' | 'report-preview' | 'qc-workspace' | 'sample-management' | 'visualization'
 
 export function HomeClient() {
+  const [datasets, setDatasets] = useState<Dataset[]>(MOCK_DATASETS)
   const [selectedDatasetId, setSelectedDatasetId] = useState<string>('1')
   const [hoveredCard, setHoveredCard] = useState<QCCardType | null>(null)
   const [activeStep, setActiveStep] = useState<QCCardType | null>(null)
@@ -113,7 +114,8 @@ export function HomeClient() {
           onNavOverview={handleNavToOverview} onNavReportCenter={handleNavToReportCenter}
           onNavSampleManagement={handleNavToSampleManagement} onNavVisualization={handleNavToVisualization} />
         <div className="workspace">
-          <DatasetList selectedId={selectedDatasetId} onSelect={setSelectedDatasetId}
+          <DatasetList datasets={datasets} onDatasetsChange={setDatasets}
+            selectedId={selectedDatasetId} onSelect={setSelectedDatasetId}
             collapsed={datasetCollapsed} onToggleCollapse={() => setDatasetCollapsed(v => !v)}
             onViewReport={(id) => { setPreviewReportId(id); setPage('report-preview') }} />
           <FieldTree collapsed={fieldCollapsed} onToggleCollapse={() => setFieldCollapsed(v => !v)} />
@@ -146,12 +148,14 @@ export function HomeClient() {
         onNavOverview={handleNavToOverview} onNavReportCenter={handleNavToReportCenter}
         onNavSampleManagement={handleNavToSampleManagement} onNavVisualization={handleNavToVisualization} />
       <div className="workspace">
-        <DatasetList selectedId={selectedDatasetId} onSelect={setSelectedDatasetId}
+        <DatasetList datasets={datasets} onDatasetsChange={setDatasets}
+          selectedId={selectedDatasetId} onSelect={setSelectedDatasetId}
           collapsed={datasetCollapsed} onToggleCollapse={() => setDatasetCollapsed(v => !v)}
           onViewReport={(id) => { setPreviewReportId(id); setPage('report-preview') }} />
         <FieldTree collapsed={fieldCollapsed} onToggleCollapse={() => setFieldCollapsed(v => !v)} />
         <main className="content-area" id="main-content">
-          <QCOverview onCardClick={handleCardClick} hoveredCard={hoveredCard} datasetId={selectedDatasetId} />
+          <QCOverview onCardClick={handleCardClick} hoveredCard={hoveredCard}
+            datasetId={selectedDatasetId} datasetMeta={datasets.find(d => d.id === selectedDatasetId)} />
         </main>
         <StepToolsPanel
           activeStep={activeStep}
