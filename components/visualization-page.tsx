@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceArea
 } from 'recharts'
@@ -33,14 +33,25 @@ interface VizFieldCategory {
 
 const DEFAULT_CATEGORIES: VizFieldCategory[] = [
   {
+    id: 'frac',
+    name: '压裂施工',
+    icon: 'timeline',
+    fields: [
+      { id: 'frac_rate', name: '施工排量', unit: 'm³/min', checked: true, color: '#1565c0' },
+      { id: 'frac_sand_ratio', name: '砂比', unit: '%', checked: true, color: '#2e7d32' },
+      { id: 'frac_tubing', name: '施工油压', unit: 'MPa', checked: true, color: '#c62828' },
+      { id: 'frac_casing', name: '施工套压', unit: 'MPa', checked: true, color: '#e65100' },
+    ],
+  },
+  {
     id: 'geology',
     name: '地质参数',
     icon: 'terrain',
     fields: [
-      { id: 'porosity', name: '孔隙度', unit: '%', checked: true, color: '#1565c0' },
-      { id: 'permeability', name: '渗透率', unit: 'mD', checked: true, color: '#2e7d32' },
+      { id: 'porosity', name: '孔隙度', unit: '%', checked: false, color: '#1565c0' },
+      { id: 'permeability', name: '渗透率', unit: 'mD', checked: false, color: '#2e7d32' },
       { id: 'reservoir_thick', name: '油层厚度', unit: 'm', checked: false, color: '#e65100' },
-      { id: 'saturation', name: '含气饱和度', unit: '%', checked: true, color: '#6a1b9a' },
+      { id: 'saturation', name: '含气饱和度', unit: '%', checked: false, color: '#6a1b9a' },
     ],
   },
   {
@@ -59,10 +70,10 @@ const DEFAULT_CATEGORIES: VizFieldCategory[] = [
     name: '生产参数',
     icon: 'oil_barrel',
     fields: [
-      { id: 'daily_gas', name: '日产气量', unit: '万m³', checked: true, color: '#1565c0' },
-      { id: 'daily_water', name: '日产水量', unit: 'm³', checked: true, color: '#2e7d32' },
-      { id: 'oil_pressure', name: '油压', unit: 'MPa', checked: true, color: '#c62828' },
-      { id: 'casing_pressure', name: '套压', unit: 'MPa', checked: true, color: '#e65100' },
+      { id: 'daily_gas', name: '日产气量', unit: '万m³', checked: false, color: '#1565c0' },
+      { id: 'daily_water', name: '日产水量', unit: 'm³', checked: false, color: '#2e7d32' },
+      { id: 'oil_pressure', name: '油压', unit: 'MPa', checked: false, color: '#c62828' },
+      { id: 'casing_pressure', name: '套压', unit: 'MPa', checked: false, color: '#e65100' },
       { id: 'cum_gas', name: '累计产气量', unit: '万m³', checked: false, color: '#6a1b9a' },
     ],
   },
@@ -71,10 +82,10 @@ const DEFAULT_CATEGORIES: VizFieldCategory[] = [
     name: '测井参数',
     icon: 'sensors',
     fields: [
-      { id: 'gr', name: '自然伽马', unit: 'API', checked: true, color: '#c62828' },
+      { id: 'gr', name: '自然伽马', unit: 'API', checked: false, color: '#c62828' },
       { id: 'sp', name: '自然电位', unit: 'mV', checked: false, color: '#1565c0' },
-      { id: 'rt', name: '深侧向电阻率', unit: 'Ω·m', checked: true, color: '#2e7d32' },
-      { id: 'ac', name: '声波时差', unit: 'μs/ft', checked: true, color: '#e65100' },
+      { id: 'rt', name: '深侧向电阻率', unit: 'Ω·m', checked: false, color: '#2e7d32' },
+      { id: 'ac', name: '声波时差', unit: 'μs/ft', checked: false, color: '#e65100' },
       { id: 'den', name: '密度', unit: 'g/cm³', checked: false, color: '#6a1b9a' },
       { id: 'cn', name: '中子', unit: '%', checked: false, color: '#00695c' },
     ],
@@ -84,6 +95,11 @@ const DEFAULT_CATEGORIES: VizFieldCategory[] = [
 // ── 多序列曲线数据（按字段 id 生成，覆盖地质/工程/生产/测井各类参数）──────────────
 // 每个字段的基准值、波动幅度及特性，供曲线图按勾选字段动态绘制
 const FIELD_SERIES: Record<string, { base: number; noise: number; min?: number; cumulative?: boolean; shutInDrop?: boolean }> = {
+  // 压裂施工参数
+  frac_rate: { base: 6.3, noise: 0.6, min: 0 },
+  frac_sand_ratio: { base: 8, noise: 3, min: 0 },
+  frac_tubing: { base: 55, noise: 5 },
+  frac_casing: { base: 46, noise: 4 },
   // 地质参数
   porosity: { base: 12, noise: 1.5 },
   permeability: { base: 0.6, noise: 0.15, min: 0.05 },
@@ -207,7 +223,7 @@ const LOG_TRACKS = [
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-type VizChartType = 'faccurve' | 'production' | 'welllog' | 'fractable'
+type VizChartType = 'production' | 'welllog' | 'fractable'
 
 interface VisualizationPageProps {
   onBack?: () => void
@@ -226,7 +242,7 @@ export function VisualizationPage({ onBack }: VisualizationPageProps) {
   const [categories, setCategories] = useState<VizFieldCategory[]>(DEFAULT_CATEGORIES)
 
   // Tabs
-  const [activeChart, setActiveChart] = useState<VizChartType>('faccurve')
+  const [activeChart, setActiveChart] = useState<VizChartType>('production')
 
   // Welllog controls
   const [selectedWell, setSelectedWell] = useState('苏36-11井')
@@ -327,7 +343,7 @@ export function VisualizationPage({ onBack }: VisualizationPageProps) {
               </md-icon>
               <md-icon class="ft-well-section-icon">water_drop</md-icon>
               <span className="ft-well-header-title">井列表</span>
-              {activeChart === 'welllog' || activeChart === 'fractable' || activeChart === 'faccurve' ? (
+              {activeChart === 'welllog' || activeChart === 'fractable' ? (
                 <span className="ft-well-count">单选</span>
               ) : (
                 <span className="ft-well-count">{selectedWells.size}/{WELL_LIST.length}</span>
@@ -343,7 +359,7 @@ export function VisualizationPage({ onBack }: VisualizationPageProps) {
                 )}
                 <ul className="ft-well-list">
                   {WELL_LIST.map(w => {
-                    if (activeChart === 'welllog' || activeChart === 'fractable' || activeChart === 'faccurve') {
+                    if (activeChart === 'welllog' || activeChart === 'fractable') {
                       const isSelected = selectedWell === w.name
                       return (
                         <li key={w.id} className={`ft-well-item${isSelected ? ' ft-well-item--checked' : ''}`}>
@@ -459,13 +475,6 @@ export function VisualizationPage({ onBack }: VisualizationPageProps) {
         <div className="viz-tabs-bar">
           <div className="viz-tabs">
             <button
-              className={`viz-tab${activeChart === 'faccurve' ? ' viz-tab--active' : ''}`}
-              onClick={() => setActiveChart('faccurve')}
-            >
-              <md-icon>timeline</md-icon>
-              压裂施工曲线图
-            </button>
-            <button
               className={`viz-tab${activeChart === 'production' ? ' viz-tab--active' : ''}`}
               onClick={() => setActiveChart('production')}
             >
@@ -496,9 +505,6 @@ export function VisualizationPage({ onBack }: VisualizationPageProps) {
 
         {/* 图表区 */}
         <div className="viz-chart-area">
-          {activeChart === 'faccurve' && (
-            <FracCurveChart well={selectedWell} onWellChange={setSelectedWell} />
-          )}
           {activeChart === 'production' && (
             <ProductionChart fields={checkedFields} />
           )}
@@ -514,56 +520,75 @@ export function VisualizationPage({ onBack }: VisualizationPageProps) {
   )
 }
 
-// ── 压裂施工曲线图（支持框选缩放、折线/阶梯切换）────────────────────────────────
+// ── 曲线图（由左侧勾选字段驱动，支持压裂施工/地质/工程/生产/测井多类参数叠加）──────
+// 支持折线/阶梯切换、框选缩放、鼠标滚轮缩放
 
-interface FracCurveRow {
-  elapsed: number
-  rate: number
-  tubing: number
-  casing: number
-  sandRatio: number
-  stage: string
-}
-
-const FRAC_STAGE_COLOR: Record<string, string> = {
-  前置液: '#1565c0', 携砂液: '#e65100', 顶替液: '#2e7d32',
-}
-
-function FracCurveChart({ well, onWellChange }: { well: string; onWellChange: (w: string) => void }) {
-  const rows = TABLE_DATASETS[0].rows as unknown as FracCurveRow[]
-  const maxElapsed = rows.length ? rows[rows.length - 1].elapsed : 0
-
+function ProductionChart({ fields }: { fields: VizField[] }) {
+  const total = SERIES_DATA.length
   const [stepped, setStepped] = useState(false)
-  const [domain, setDomain] = useState<[number, number]>([0, maxElapsed])
+  const [range, setRange] = useState<[number, number]>([0, total - 1])
   const [refLeft, setRefLeft] = useState<number | null>(null)
   const [refRight, setRefRight] = useState<number | null>(null)
+  const bodyRef = useRef<HTMLDivElement>(null)
 
-  const zoomed = domain[0] !== 0 || domain[1] !== maxElapsed
+  const zoomed = range[0] !== 0 || range[1] !== total - 1
+  const data = SERIES_DATA.slice(range[0], range[1] + 1)
+  const MIN_WIN = 4
 
-  // 施工阶段背景带
-  const bands = rows.reduce<{ stage: string; x1: number; x2: number }[]>((acc, r) => {
-    const last = acc[acc.length - 1]
-    if (last && last.stage === r.stage) last.x2 = r.elapsed
-    else acc.push({ stage: r.stage, x1: r.elapsed, x2: r.elapsed })
-    return acc
-  }, [])
+  const zoomByFactor = useCallback((factor: number) => {
+    setRange(([a, b]) => {
+      const center = (a + b) / 2
+      const half = ((b - a) / 2) * factor
+      let na = Math.round(center - half)
+      let nb = Math.round(center + half)
+      na = Math.max(0, na)
+      nb = Math.min(total - 1, nb)
+      if (nb - na < MIN_WIN) return [a, b]
+      return [na, nb]
+    })
+  }, [total])
+
+  // 鼠标滚轮缩放（非被动监听以便阻止页面滚动）
+  useEffect(() => {
+    const el = bodyRef.current
+    if (!el) return
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault()
+      zoomByFactor(e.deltaY < 0 ? 0.82 : 1.22)
+    }
+    el.addEventListener('wheel', onWheel, { passive: false })
+    return () => el.removeEventListener('wheel', onWheel)
+  }, [zoomByFactor])
 
   const commitZoom = () => {
     if (refLeft == null || refRight == null || refLeft === refRight) {
       setRefLeft(null); setRefRight(null); return
     }
-    const [a, b] = [refLeft, refRight].sort((x, y) => x - y)
-    setDomain([a, b])
+    const a = Math.min(refLeft, refRight)
+    const b = Math.max(refLeft, refRight)
+    const absA = range[0] + a
+    const absB = range[0] + b
+    if (absB - absA >= 2) setRange([absA, absB])
     setRefLeft(null); setRefRight(null)
   }
 
-  const zoomBy = (factor: number) => {
-    const [a, b] = domain
-    const center = (a + b) / 2
-    const half = ((b - a) / 2) * factor
-    setDomain([Math.max(0, Math.round(center - half)), Math.min(maxElapsed, Math.round(center + half))])
+  if (fields.length === 0) {
+    return (
+      <div className="prod-chart-wrap">
+        <div className="prod-empty">
+          <md-icon>show_chart</md-icon>
+          <p className="prod-empty-title">请在左侧字段列表中勾选要展示的字段</p>
+          <span className="prod-empty-hint">在“压裂施工”分类勾选可查看压裂施工曲线，也支持叠加地质、工程、生产、测井等参数</span>
+        </div>
+      </div>
+    )
   }
 
+  // 按单位聚合生成 Y 轴，左右交替排布
+  const units: string[] = []
+  fields.forEach(f => { const u = f.unit || '数值'; if (!units.includes(u)) units.push(u) })
+  const axisId = (u: string) => `axis-${units.indexOf(u)}`
+  const unitColor = (u: string) => fields.find(f => (f.unit || '数值') === u)?.color ?? '#1565c0'
   const lineType = stepped ? 'stepAfter' : 'monotone'
 
   return (
@@ -571,11 +596,6 @@ function FracCurveChart({ well, onWellChange }: { well: string; onWellChange: (w
       {/* 工具栏 */}
       <div className="fc-toolbar">
         <div className="fc-toolbar-left">
-          <span className="viz-label">井名：</span>
-          <select className="viz-select" value={well} onChange={e => onWellChange(e.target.value)}>
-            {WELL_LIST.map(w => <option key={w.id} value={w.name}>{w.name}</option>)}
-          </select>
-          <span className="fc-divider" />
           <span className="viz-label">图形样式：</span>
           <div className="fc-segment" role="group" aria-label="曲线样式切换">
             <button
@@ -595,133 +615,31 @@ function FracCurveChart({ well, onWellChange }: { well: string; onWellChange: (w
           </div>
         </div>
         <div className="fc-toolbar-right">
-          <span className="fc-hint">框选图表区可放大</span>
-          <button className="viz-tool-btn" title="放大" onClick={() => zoomBy(0.6)}><md-icon>zoom_in</md-icon></button>
-          <button className="viz-tool-btn" title="缩小" onClick={() => zoomBy(1.6)}><md-icon>zoom_out</md-icon></button>
-          <button className="viz-tool-btn" title="重置缩放" onClick={() => setDomain([0, maxElapsed])} disabled={!zoomed}>
+          <span className="fc-hint">滚轮或框选可缩放</span>
+          <button className="viz-tool-btn" title="放大" onClick={() => zoomByFactor(0.7)}><md-icon>zoom_in</md-icon></button>
+          <button className="viz-tool-btn" title="缩小" onClick={() => zoomByFactor(1.4)}><md-icon>zoom_out</md-icon></button>
+          <button className="viz-tool-btn" title="重置缩放" onClick={() => setRange([0, total - 1])} disabled={!zoomed}>
             <md-icon>restart_alt</md-icon>
           </button>
         </div>
       </div>
 
       {/* 图表 */}
-      <div className="prod-chart-body">
+      <div className="prod-chart-body" ref={bodyRef}>
         <ResponsiveContainer width="100%" height="100%">
           <LineChart
-            data={rows}
-            margin={{ top: 12, right: 56, left: 8, bottom: 8 }}
-            onMouseDown={(e: { activeLabel?: string | number }) => { if (e && e.activeLabel != null) setRefLeft(Number(e.activeLabel)) }}
-            onMouseMove={(e: { activeLabel?: string | number }) => { if (refLeft != null && e && e.activeLabel != null) setRefRight(Number(e.activeLabel)) }}
+            data={data}
+            margin={{ top: 8, right: 24, left: 8, bottom: 8 }}
+            onMouseDown={(e: { activeTooltipIndex?: number }) => { if (e && e.activeTooltipIndex != null) setRefLeft(e.activeTooltipIndex) }}
+            onMouseMove={(e: { activeTooltipIndex?: number }) => { if (refLeft != null && e && e.activeTooltipIndex != null) setRefRight(e.activeTooltipIndex) }}
             onMouseUp={commitZoom}
           >
-            <CartesianGrid strokeDasharray="3 3" stroke="var(--md-sys-color-outline-variant)" />
-            {bands.map((b, i) => (
-              <ReferenceArea
-                key={i}
-                yAxisId="rate"
-                x1={b.x1}
-                x2={b.x2}
-                fill={FRAC_STAGE_COLOR[b.stage] ?? '#999'}
-                fillOpacity={0.06}
-                strokeOpacity={0}
-              />
-            ))}
-            <XAxis
-              dataKey="elapsed"
-              type="number"
-              domain={domain}
-              allowDataOverflow
-              tickFormatter={(v) => `${Math.round(Number(v))}`}
-              tick={{ fontSize: 11, fill: 'var(--md-sys-color-on-surface-variant)' }}
-              tickLine={false}
-              label={{ value: '施工时长 (min)', position: 'insideBottom', offset: -4, fontSize: 11, fill: 'var(--md-sys-color-on-surface-variant)' }}
-            />
-            <YAxis
-              yAxisId="rate"
-              orientation="left"
-              width={52}
-              tick={{ fontSize: 11, fill: '#1565c0' }}
-              tickLine={false}
-              axisLine={false}
-              label={{ value: '排量/砂比', angle: -90, position: 'insideLeft', fontSize: 11, fill: '#1565c0' }}
-            />
-            <YAxis
-              yAxisId="pressure"
-              orientation="right"
-              width={52}
-              tick={{ fontSize: 11, fill: '#c62828' }}
-              tickLine={false}
-              axisLine={false}
-              label={{ value: '压力 (MPa)', angle: 90, position: 'insideRight', fontSize: 11, fill: '#c62828' }}
-            />
-            <Tooltip
-              contentStyle={{
-                fontSize: 12,
-                background: 'var(--md-sys-color-surface)',
-                border: '1px solid var(--md-sys-color-outline-variant)',
-                borderRadius: 8,
-              }}
-              labelStyle={{ color: 'var(--md-sys-color-on-surface)', fontWeight: 600 }}
-              labelFormatter={(v) => `施工时长 ${v} min`}
-            />
-            <Legend wrapperStyle={{ fontSize: 12, paddingTop: 4 }} iconType="circle" iconSize={8} />
-            <Line yAxisId="rate" type={lineType} dataKey="rate" name="施工排量 (m³/min)" stroke="#1565c0" dot={false} strokeWidth={1.8} isAnimationActive={false} />
-            <Line yAxisId="rate" type={lineType} dataKey="sandRatio" name="砂比 (%)" stroke="#2e7d32" dot={false} strokeWidth={1.8} isAnimationActive={false} />
-            <Line yAxisId="pressure" type={lineType} dataKey="tubing" name="油压 (MPa)" stroke="#c62828" dot={false} strokeWidth={1.8} isAnimationActive={false} />
-            <Line yAxisId="pressure" type={lineType} dataKey="casing" name="套压 (MPa)" stroke="#e65100" dot={false} strokeWidth={1.8} isAnimationActive={false} />
-            {refLeft != null && refRight != null && (
-              <ReferenceArea yAxisId="rate" x1={refLeft} x2={refRight} fill="#1565c0" fillOpacity={0.12} strokeOpacity={0.3} />
-            )}
-          </LineChart>
-        </ResponsiveContainer>
-      </div>
-
-      {/* 阶段图例 */}
-      <div className="fc-stage-legend">
-        {bands.map((b, i) => (
-          <span key={i} className="fc-stage-item">
-            <span className="fc-stage-swatch" style={{ background: FRAC_STAGE_COLOR[b.stage] ?? '#999' }} />
-            {b.stage}
-            <span className="fc-stage-range">{b.x1}–{b.x2} min</span>
-          </span>
-        ))}
-      </div>
-    </div>
-  )
-}
-
-// ── 曲线图（由左侧勾选字段驱动，支持地质/工程/生产/测井多类参数叠加）──────────────
-
-function ProductionChart({ fields }: { fields: VizField[] }) {
-  if (fields.length === 0) {
-    return (
-      <div className="prod-chart-wrap">
-        <div className="prod-empty">
-          <md-icon>show_chart</md-icon>
-          <p className="prod-empty-title">请在左侧字段列表中勾选要展示的字段</p>
-          <span className="prod-empty-hint">支持地质、工程、生产、测井等多类参数曲线叠加对比</span>
-        </div>
-      </div>
-    )
-  }
-
-  // 按单位聚合生成 Y 轴，左右交替排布
-  const units: string[] = []
-  fields.forEach(f => { const u = f.unit || '数值'; if (!units.includes(u)) units.push(u) })
-  const axisId = (u: string) => `axis-${units.indexOf(u)}`
-  const unitColor = (u: string) => fields.find(f => (f.unit || '数值') === u)?.color ?? '#1565c0'
-
-  return (
-    <div className="prod-chart-wrap">
-      <div className="prod-chart-body">
-        <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={SERIES_DATA} margin={{ top: 8, right: 24, left: 8, bottom: 8 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="var(--md-sys-color-outline-variant)" />
             <XAxis
               dataKey="date"
               tick={{ fontSize: 11, fill: 'var(--md-sys-color-on-surface-variant)' }}
               tickLine={false}
-              interval={14}
+              interval={Math.max(0, Math.floor(data.length / 8))}
             />
             {units.map((u, i) => {
               const isLeft = i % 2 === 0
@@ -758,15 +676,26 @@ function ProductionChart({ fields }: { fields: VizField[] }) {
               <Line
                 key={f.id}
                 yAxisId={axisId(f.unit || '数值')}
-                type="monotone"
+                type={lineType}
                 dataKey={f.id}
                 name={f.unit ? `${f.name} (${f.unit})` : f.name}
                 stroke={f.color}
                 dot={false}
                 strokeWidth={1.5}
                 connectNulls
+                isAnimationActive={false}
               />
             ))}
+            {refLeft != null && refRight != null && data[refLeft] && data[refRight] && (
+              <ReferenceArea
+                yAxisId={axisId(fields[0].unit || '数值')}
+                x1={data[refLeft].date as string}
+                x2={data[refRight].date as string}
+                fill="#1565c0"
+                fillOpacity={0.12}
+                strokeOpacity={0.3}
+              />
+            )}
           </LineChart>
         </ResponsiveContainer>
       </div>
