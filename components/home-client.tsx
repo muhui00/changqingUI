@@ -9,6 +9,9 @@ import { TopNav } from './top-nav'
 import { ReportCenter, CreateReportDialog } from './report-center'
 import { ReportPreview } from './report-preview'
 import { ConsistencyWorkspace, type QCWorkspaceType } from './consistency-workspace'
+import { CompletenessWorkspace } from './completeness-workspace'
+import { DistributionWorkspace } from './distribution-workspace'
+import { CorrelationWorkspace } from './correlation-workspace'
 import { SampleManagement } from './sample-management'
 import { VisualizationPage } from './visualization-page'
 import { FieldStandardLibrary } from './field-standard-library'
@@ -169,11 +172,18 @@ export function HomeClient() {
             onViewReport={(id) => { setPreviewReportId(id); setPage('report-preview') }} />
           <FieldTree collapsed={fieldCollapsed} onToggleCollapse={() => setFieldCollapsed(v => !v)} />
           <main className="content-area" id="main-content">
-            {/* 目前只有一致性校验工作区，其他类型后续补充 */}
-            <ConsistencyWorkspace
-              onBack={handleNavToOverview}
-              onSwitchTab={handleSwitchWorkspaceTab}
-            />
+            {activeWorkspace === 'consistency' && (
+              <ConsistencyWorkspace onBack={handleNavToOverview} onSwitchTab={handleSwitchWorkspaceTab} />
+            )}
+            {activeWorkspace === 'completeness' && (
+              <CompletenessWorkspace onBack={handleNavToOverview} onSwitchTab={handleSwitchWorkspaceTab} />
+            )}
+            {activeWorkspace === 'distribution' && (
+              <DistributionWorkspace onBack={handleNavToOverview} onSwitchTab={handleSwitchWorkspaceTab} />
+            )}
+            {activeWorkspace === 'correlation' && (
+              <CorrelationWorkspace onBack={handleNavToOverview} onSwitchTab={handleSwitchWorkspaceTab} />
+            )}
           </main>
           <StepToolsPanel
             datasetId={selectedDatasetId}

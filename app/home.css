@@ -4187,6 +4187,209 @@
 }
 .cs-review-btn:hover { background: var(--md-sys-color-primary-container); color: var(--md-sys-color-primary); border-color: var(--md-sys-color-primary); }
 
+/* ══ 四类质控面板共享扩展样式（完整性 / 分布范围 / 相关性）══ */
+
+.cs-toolbar-hint { color: var(--md-sys-color-on-surface-variant); font-size: 12px; }
+.cs-muted { color: var(--md-sys-color-on-surface-variant); }
+
+/* 诊断视图切换 */
+.cs-diag-switch {
+  display: inline-flex;
+  gap: 2px;
+  background: var(--md-sys-color-surface-container-high);
+  border-radius: 8px;
+  padding: 3px;
+}
+.cs-diag-tab {
+  padding: 4px 12px;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  font-size: 12.5px;
+  color: var(--md-sys-color-on-surface-variant);
+  cursor: pointer;
+  font-family: var(--md-ref-typeface-plain);
+  transition: all 0.12s;
+}
+.cs-diag-tab:hover { color: var(--md-sys-color-on-surface); }
+.cs-diag-tab--active {
+  background: var(--md-sys-color-surface);
+  color: var(--md-sys-color-primary);
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+}
+
+/* ── 完整性：必填/工具/置信度 ── */
+.cs-req-chip {
+  display: inline-flex;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.cs-req-chip--must { background: #ffebee; color: #c62828; }
+.cs-req-chip--cond { background: #fff3e0; color: #e65100; }
+.cs-req-chip--opt  { background: var(--md-sys-color-surface-container-high); color: var(--md-sys-color-on-surface-variant); }
+
+.cs-badge--miss   { background: #ede7f6; color: #5e35b1; }
+.cs-badge--reason { background: #fce4ec; color: #c2185b; }
+
+.cs-tool-tag {
+  display: inline-flex;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: #e3f2fd;
+  color: #1565c0;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.cs-conf-pill {
+  display: inline-flex;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.cs-conf-pill--ok  { background: #e8f5e9; color: #2e7d32; }
+.cs-conf-pill--mid { background: #fff3e0; color: #e65100; }
+.cs-conf-pill--low { background: #ffebee; color: #c62828; }
+
+/* 字段完整率条形图 */
+.cs-rate-chart { padding: 6px 4px 2px; display: flex; flex-direction: column; gap: 10px; }
+.cs-rate-row { display: flex; align-items: center; gap: 12px; }
+.cs-rate-field { width: 88px; flex-shrink: 0; font-size: 13px; color: var(--md-sys-color-on-surface); }
+.cs-rate-track {
+  position: relative;
+  flex: 1;
+  height: 18px;
+  background: var(--md-sys-color-surface-container-high);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.cs-rate-fill { position: absolute; top: 0; left: 0; height: 100%; border-radius: 4px; }
+.cs-rate-fill--before { background: #b0bec5; z-index: 1; }
+.cs-rate-fill--after  { background: #1565c0; opacity: 0.55; z-index: 0; }
+.cs-rate-target {
+  position: absolute; top: -2px; width: 2px; height: 22px;
+  background: #2e7d32; z-index: 2;
+}
+.cs-rate-target::after {
+  content: ''; position: absolute; top: -3px; left: -3px;
+  border-left: 4px solid transparent; border-right: 4px solid transparent;
+  border-top: 4px solid #2e7d32;
+}
+.cs-rate-nums { display: inline-flex; align-items: center; gap: 4px; width: 130px; justify-content: flex-end; font-variant-numeric: tabular-nums; }
+.cs-rate-before-num { color: var(--md-sys-color-on-surface-variant); font-size: 12px; }
+.cs-rate-after-num  { color: #1565c0; font-weight: 700; font-size: 13px; }
+.cs-rate-legend { display: flex; gap: 16px; padding: 8px 4px 2px; flex-wrap: wrap; }
+.cs-rate-target-legend {
+  width: 0; height: 0; border-left: 4px solid transparent; border-right: 4px solid transparent; border-top: 6px solid #2e7d32; margin-right: 2px;
+}
+
+/* 井×字段缺失矩阵 */
+.cs-matrix-wrap { padding: 4px; overflow-x: auto; }
+.cs-matrix { border-collapse: collapse; width: 100%; }
+.cs-matrix-corner { font-size: 11px; color: var(--md-sys-color-on-surface-variant); text-align: left; padding: 4px 8px; }
+.cs-matrix-fh { font-size: 12px; font-weight: 600; color: var(--md-sys-color-on-surface); padding: 4px 6px; text-align: center; white-space: nowrap; }
+.cs-matrix-wh { font-size: 12px; color: var(--md-sys-color-on-surface); padding: 4px 8px; white-space: nowrap; }
+.cs-matrix-cell {
+  width: 56px; height: 30px; text-align: center; vertical-align: middle;
+  border: 2px solid var(--md-sys-color-surface);
+  border-radius: 4px;
+}
+.cs-matrix-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; }
+
+/* ── 分布范围：命中方法/分数/风险 ── */
+.cs-method-tag {
+  display: inline-flex; padding: 2px 8px; border-radius: 4px;
+  background: #ede7f6; color: #5e35b1; font-size: 12px; white-space: nowrap;
+}
+.cs-score-bar { display: flex; align-items: center; gap: 6px; }
+.cs-score-bar-track { width: 46px; height: 6px; background: var(--md-sys-color-surface-container-high); border-radius: 3px; overflow: hidden; }
+.cs-score-bar-fill { height: 100%; border-radius: 3px; }
+.cs-score-bar-num { font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+.cs-risk {
+  display: inline-flex; align-items: center; gap: 3px;
+  padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 500; white-space: nowrap;
+}
+.cs-risk--info   { background: var(--md-sys-color-surface-container-high); color: var(--md-sys-color-on-surface-variant); }
+.cs-risk--warn   { background: #fff3e0; color: #e65100; }
+.cs-risk--severe { background: #ffebee; color: #c62828; }
+
+.cs-boundary-legend { display: flex; gap: 16px; padding: 8px 24px 0; flex-wrap: wrap; }
+.cs-boundary-line { display: inline-block; width: 18px; height: 0; margin-right: 4px; vertical-align: middle; }
+.cs-boundary-line--stat  { border-top: 2px dashed #607d8b; }
+.cs-boundary-line--biz   { border-top: 2px dashed #f9a825; }
+.cs-boundary-line--phys  { border-top: 2px solid #c62828; }
+
+.cs-chip-group { display: flex; flex-wrap: wrap; gap: 6px; }
+
+/* ── 相关性：来源/矩阵/逻辑 ── */
+.cs-src {
+  display: inline-flex; padding: 2px 8px; border-radius: 4px; font-size: 12px; white-space: nowrap;
+}
+.cs-src--auto   { background: #e3f2fd; color: #1565c0; }
+.cs-src--manual { background: #fff8e1; color: #f57f17; }
+.cs-src--model  { background: #f3e5f5; color: #7b1fa2; }
+
+.cs-corr-matrix-wrap { display: flex; justify-content: center; padding: 8px; overflow-x: auto; }
+.cs-corr-matrix { border-collapse: separate; border-spacing: 3px; }
+.cs-corr-corner { width: 60px; }
+.cs-corr-fh { font-size: 11px; font-weight: 600; color: var(--md-sys-color-on-surface); padding: 2px; text-align: center; max-width: 70px; }
+.cs-corr-rh { font-size: 11px; font-weight: 600; color: var(--md-sys-color-on-surface); padding: 2px 8px; text-align: right; white-space: nowrap; }
+.cs-corr-cell {
+  width: 70px; height: 42px; text-align: center; vertical-align: middle;
+  border-radius: 6px; font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums;
+}
+
+.cs-logic-list { display: flex; flex-direction: column; gap: 8px; padding: 6px 4px; }
+.cs-logic-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 14px; border-radius: 8px;
+  background: var(--md-sys-color-surface-container-low);
+  border: 1px solid var(--md-sys-color-outline-variant);
+}
+.cs-logic-item--fail { border-color: #ef9a9a; background: #fff5f5; }
+.cs-logic-expr { flex: 1; font-size: 13px; color: var(--md-sys-color-on-surface); }
+.cs-logic-result { padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+.cs-logic-result--ok   { background: #e8f5e9; color: #2e7d32; }
+.cs-logic-result--fail { background: #ffebee; color: #c62828; }
+.cs-logic-hits { font-size: 12px; color: var(--md-sys-color-on-surface-variant); white-space: nowrap; min-width: 90px; text-align: right; }
+
+/* ── 大弹窗与两栏布局（补全/范围处理/算法配置）── */
+.cs-dialog--lg { width: min(1100px, calc(100vw - 64px)); max-height: calc(100vh - 64px); }
+.cs-dialog-body--grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.cs-comp-left, .cs-comp-right { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+
+.cs-tool-list { display: flex; flex-direction: column; gap: 6px; }
+.cs-tool-opt {
+  padding: 8px 12px; border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: 8px; cursor: pointer; transition: all 0.12s;
+}
+.cs-tool-opt:hover { border-color: var(--md-sys-color-primary); }
+.cs-tool-opt--active { border-color: var(--md-sys-color-primary); background: var(--md-sys-color-primary-container); }
+.cs-tool-opt-name { font-size: 13px; font-weight: 600; color: var(--md-sys-color-on-surface); }
+.cs-tool-opt-desc { font-size: 12px; color: var(--md-sys-color-on-surface-variant); margin-top: 1px; }
+.cs-tool-opt-config { font-size: 11px; color: var(--md-sys-color-on-surface-variant); margin-top: 3px; opacity: 0.85; }
+
+.cs-comp-preview {
+  display: flex; flex-direction: column; gap: 6px;
+  padding: 12px; border-radius: 8px;
+  background: var(--md-sys-color-surface-container-low);
+  border: 1px solid var(--md-sys-color-outline-variant);
+}
+.cs-comp-preview-row { display: flex; justify-content: space-between; gap: 12px; font-size: 13px; }
+.cs-comp-preview-row span { color: var(--md-sys-color-on-surface-variant); flex-shrink: 0; }
+.cs-comp-preview-row b { color: var(--md-sys-color-on-surface); text-align: right; }
+.cs-comp-chart {
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: 8px; padding: 8px; background: var(--md-sys-color-surface);
+}
+
 /* ── 字段树面板中的井列表 ── */
 .ft-well-section {
   flex-shrink: 0;
