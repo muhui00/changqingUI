@@ -336,8 +336,8 @@ export function ProductionChart({ fields }: { fields: VizField[] }) {
           <LineChart
             data={data}
             margin={{ top: 8, right: 24, left: 8, bottom: 8 }}
-            onMouseDown={(e: { activeTooltipIndex?: number }) => { if (e && e.activeTooltipIndex != null) setRefLeft(e.activeTooltipIndex) }}
-            onMouseMove={(e: { activeTooltipIndex?: number }) => { if (refLeft != null && e && e.activeTooltipIndex != null) setRefRight(e.activeTooltipIndex) }}
+            onMouseDown={(e) => { const i = e?.activeTooltipIndex; if (i != null) setRefLeft(Number(i)) }}
+            onMouseMove={(e) => { const i = e?.activeTooltipIndex; if (refLeft != null && i != null) setRefRight(Number(i)) }}
             onMouseUp={commitZoom}
           >
             <CartesianGrid strokeDasharray="3 3" stroke="var(--md-sys-color-outline-variant)" />
@@ -601,7 +601,7 @@ function genFrac(): TableDataset {
       { key: 'sandRate', label: '瞬时砂量', unit: 'kg/min', type: 'num' },
       { key: 'cumFluid', label: '累计液量', unit: 'm³', type: 'num', decimals: 1 },
       { key: 'cumSand', label: '累计砂量', unit: 'm³', type: 'num', decimals: 2 },
-      { key: 'stage', label: '施工阶段', type: 'tag' },
+      { key: 'stage', label: '���工阶段', type: 'tag' },
       { key: 'status', label: '状态', type: 'status' },
     ],
     rows,
@@ -922,7 +922,7 @@ export function QcVisualization() {
             <aside className={`qcv-fields${fieldsOpen ? '' : ' qcv-fields--collapsed'}`} aria-label="字段选择">
               <div className="qcv-fields-head">
                 <button className="qcv-fields-toggle" onClick={() => setFieldsOpen(v => !v)}
-                  aria-label={fieldsOpen ? '收起字段列表' : '展开字段列表'} title={fieldsOpen ? '收起' : '展开'}>
+                  aria-label={fieldsOpen ? '��起字段列表' : '展开字段列表'} title={fieldsOpen ? '收起' : '展开'}>
                   <md-icon>{fieldsOpen ? 'chevron_left' : 'chevron_right'}</md-icon>
                 </button>
                 {fieldsOpen && <span className="qcv-fields-title">字段（已选 {checkedFields.length}）</span>}
