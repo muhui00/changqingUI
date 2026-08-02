@@ -174,7 +174,7 @@ const LOG_TRACKS = [
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-type VizChartType = 'production' | 'welllog'
+type VizChartType = 'production' | 'welllog' | 'fractable'
 
 interface VisualizationPageProps {
   onBack?: () => void
@@ -294,7 +294,7 @@ export function VisualizationPage({ onBack }: VisualizationPageProps) {
               </md-icon>
               <md-icon class="ft-well-section-icon">water_drop</md-icon>
               <span className="ft-well-header-title">井列表</span>
-              {activeChart === 'welllog' ? (
+              {activeChart === 'welllog' || activeChart === 'fractable' ? (
                 <span className="ft-well-count">单选</span>
               ) : (
                 <span className="ft-well-count">{selectedWells.size}/{WELL_LIST.length}</span>
@@ -302,7 +302,7 @@ export function VisualizationPage({ onBack }: VisualizationPageProps) {
             </div>
             {!wellCollapsed && (
               <div className="ft-well-body">
-                {activeChart !== 'welllog' && (
+                {activeChart === 'production' && (
                   <div className="ft-well-actions">
                     <button className="field-tree-action-btn" onClick={() => setSelectedWells(new Set(WELL_LIST.map(w => w.id)))}>全选</button>
                     <button className="field-tree-action-btn" onClick={() => setSelectedWells(new Set())}>清空</button>
@@ -310,7 +310,7 @@ export function VisualizationPage({ onBack }: VisualizationPageProps) {
                 )}
                 <ul className="ft-well-list">
                   {WELL_LIST.map(w => {
-                    if (activeChart === 'welllog') {
+                    if (activeChart === 'welllog' || activeChart === 'fractable') {
                       const isSelected = selectedWell === w.name
                       return (
                         <li key={w.id} className={`ft-well-item${isSelected ? ' ft-well-item--checked' : ''}`}>
@@ -439,6 +439,13 @@ export function VisualizationPage({ onBack }: VisualizationPageProps) {
               <md-icon>ssid_chart</md-icon>
               测井剖面图
             </button>
+            <button
+              className={`viz-tab${activeChart === 'fractable' ? ' viz-tab--active' : ''}`}
+              onClick={() => setActiveChart('fractable')}
+            >
+              <md-icon>table_chart</md-icon>
+              施工曲线表格
+            </button>
           </div>
           <div className="viz-tabs-actions">
             <button className="viz-tool-btn" title="全屏"><md-icon>fullscreen</md-icon></button>
@@ -454,6 +461,9 @@ export function VisualizationPage({ onBack }: VisualizationPageProps) {
           )}
           {activeChart === 'welllog' && (
             <WellLogChart well={selectedWell} onWellChange={setSelectedWell} />
+          )}
+          {activeChart === 'fractable' && (
+            <FracTable well={selectedWell} onWellChange={setSelectedWell} />
           )}
         </div>
       </main>
@@ -648,6 +658,198 @@ function WellLogChart({ well, onWellChange }: { well: string; onWellChange: (w: 
             </div>
           </div>
         ))}
+      </div>
+    </div>
+  )
+}
+
+// ── 压裂施工曲线表格 ────────────────────────────────────────────────────────────
+
+interface FracRow {
+  time: string          // 施工时间 hh:mm:ss
+  elapsed: number       // 已施工时长 min
+  rate: number          // 施工排量 m³/min
+  tubingPressure: number// 油压 MPa
+  casingPressure: number// 套压 MPa
+  sandRatio: number     // 砂比 %
+  sandRate: number      // 瞬时砂量 kg/min
+  cumFluid: number      // 累计液量 m³
+  cumSand: number       // 累计砂量 m³
+  stage: string         // 施工阶段
+  status: 'normal' | 'warning' | 'alarm'
+}
+
+const FRAC_STAGES = [
+  { name: '前置液', minutes: 18, rate: 6.0, sr: 0 },
+  { name: '携砂液', minutes: 46, rate: 6.5, sr: 8 },
+  { name: '顶替液', minutes: 10, rate: 6.2, sr: 0 },
+]
+
+function genFracData(): FracRow[] {
+  const rows: FracRow[] = []
+  let elapsed = 0
+  let cumFluid = 0
+  let cumSand = 0
+  const start = new Date('2026-07-28T09:30:00')
+  let seed = 20260728
+
+  const rnd = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return (seed % 1000) / 1000 }
+
+  FRAC_STAGES.forEach(stage => {
+    for (let m = 0; m < stage.minutes; m += 2) {
+      const t = new Date(start.getTime() + elapsed * 60000)
+      const rate = +(stage.rate + (rnd() - 0.5) * 0.6).toFixed(2)
+      // 携砂阶段砂比逐步爬坡
+      const ramp = stage.sr > 0 ? Math.min(1, m / (stage.minutes * 0.5)) : 0
+      const sandRatio = +(stage.sr * (0.5 + ramp * 0.5) + (stage.sr > 0 ? (rnd() - 0.5) * 1.2 : 0)).toFixed(1)
+      const tubing = +(52 + ramp * 8 + (rnd() - 0.5) * 3).toFixed(1)
+      const casing = +(tubing - 8 - rnd() * 2).toFixed(1)
+      const sandRate = +(rate * 1000 * (sandRatio / 100)).toFixed(0)
+      cumFluid = +(cumFluid + rate * 2).toFixed(1)
+      cumSand = +(cumSand + (sandRate * 2) / 1500).toFixed(2) // 砂密度≈1.5t/m³
+      const status: FracRow['status'] =
+        tubing > 58 ? 'alarm' : sandRatio > 7.5 ? 'warning' : 'normal'
+      rows.push({
+        time: t.toTimeString().slice(0, 8),
+        elapsed: elapsed,
+        rate,
+        tubingPressure: tubing,
+        casingPressure: casing,
+        sandRatio,
+        sandRate,
+        cumFluid,
+        cumSand,
+        stage: stage.name,
+        status,
+      })
+      elapsed += 2
+    }
+  })
+  return rows
+}
+
+const FRAC_DATA = genFracData()
+
+const STAGE_COLOR: Record<string, string> = {
+  前置液: '#1565c0',
+  携砂液: '#e65100',
+  顶替液: '#2e7d32',
+}
+
+function FracTable({ well, onWellChange }: { well: string; onWellChange: (w: string) => void }) {
+  const [stageFilter, setStageFilter] = useState<string>('全部')
+  const [onlyAbnormal, setOnlyAbnormal] = useState(false)
+
+  const rows = FRAC_DATA.filter(r =>
+    (stageFilter === '全部' || r.stage === stageFilter) &&
+    (!onlyAbnormal || r.status !== 'normal')
+  )
+
+  // 汇总统计
+  const last = FRAC_DATA[FRAC_DATA.length - 1]
+  const maxPressure = Math.max(...FRAC_DATA.map(r => r.tubingPressure))
+  const maxSandRatio = Math.max(...FRAC_DATA.map(r => r.sandRatio))
+  const avgRate = +(FRAC_DATA.reduce((s, r) => s + r.rate, 0) / FRAC_DATA.length).toFixed(2)
+  const abnormalCount = FRAC_DATA.filter(r => r.status !== 'normal').length
+
+  return (
+    <div className="frac-table-wrap">
+      {/* 工具栏 */}
+      <div className="frac-toolbar">
+        <div className="frac-toolbar-left">
+          <span className="viz-label">井名：</span>
+          <select className="viz-select" value={well} onChange={e => onWellChange(e.target.value)}>
+            {WELL_LIST.map(w => <option key={w.id} value={w.name}>{w.name}</option>)}
+          </select>
+          <span className="viz-label">施工阶段：</span>
+          <select className="viz-select" value={stageFilter} onChange={e => setStageFilter(e.target.value)}>
+            <option>全部</option>
+            {FRAC_STAGES.map(s => <option key={s.name} value={s.name}>{s.name}</option>)}
+          </select>
+          <label className="frac-check-label">
+            <input type="checkbox" className="field-tree-checkbox" checked={onlyAbnormal}
+              onChange={e => setOnlyAbnormal(e.target.checked)} />
+            仅看异常
+          </label>
+        </div>
+        <div className="frac-toolbar-right">
+          <span className="frac-count">共 {rows.length} 条</span>
+        </div>
+      </div>
+
+      {/* 汇总指标 */}
+      <div className="frac-summary">
+        <div className="frac-summary-item">
+          <span className="frac-summary-label">累计液量</span>
+          <span className="frac-summary-value">{last.cumFluid} <em>m³</em></span>
+        </div>
+        <div className="frac-summary-item">
+          <span className="frac-summary-label">累计砂量</span>
+          <span className="frac-summary-value">{last.cumSand} <em>m³</em></span>
+        </div>
+        <div className="frac-summary-item">
+          <span className="frac-summary-label">平均排量</span>
+          <span className="frac-summary-value">{avgRate} <em>m³/min</em></span>
+        </div>
+        <div className="frac-summary-item">
+          <span className="frac-summary-label">最高油压</span>
+          <span className="frac-summary-value" style={{ color: '#c62828' }}>{maxPressure} <em>MPa</em></span>
+        </div>
+        <div className="frac-summary-item">
+          <span className="frac-summary-label">最高砂比</span>
+          <span className="frac-summary-value" style={{ color: '#e65100' }}>{maxSandRatio} <em>%</em></span>
+        </div>
+        <div className="frac-summary-item">
+          <span className="frac-summary-label">异常点</span>
+          <span className="frac-summary-value" style={{ color: abnormalCount ? '#c62828' : 'inherit' }}>{abnormalCount} <em>个</em></span>
+        </div>
+      </div>
+
+      {/* 表格 */}
+      <div className="frac-table-scroll">
+        <table className="frac-table">
+          <thead>
+            <tr>
+              <th className="frac-th frac-th--sticky">施工时间</th>
+              <th className="frac-th">时长<br /><span className="frac-th-unit">min</span></th>
+              <th className="frac-th">施工排量<br /><span className="frac-th-unit">m³/min</span></th>
+              <th className="frac-th">油压<br /><span className="frac-th-unit">MPa</span></th>
+              <th className="frac-th">套压<br /><span className="frac-th-unit">MPa</span></th>
+              <th className="frac-th">砂比<br /><span className="frac-th-unit">%</span></th>
+              <th className="frac-th">瞬时砂量<br /><span className="frac-th-unit">kg/min</span></th>
+              <th className="frac-th">累计液量<br /><span className="frac-th-unit">m³</span></th>
+              <th className="frac-th">累计砂量<br /><span className="frac-th-unit">m³</span></th>
+              <th className="frac-th">施工阶段</th>
+              <th className="frac-th">状态</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r, i) => (
+              <tr key={i} className={`frac-tr frac-tr--${r.status}`}>
+                <td className="frac-td frac-td--sticky frac-td--mono">{r.time}</td>
+                <td className="frac-td frac-td--num">{r.elapsed}</td>
+                <td className="frac-td frac-td--num">{r.rate.toFixed(2)}</td>
+                <td className="frac-td frac-td--num" style={{ color: r.status === 'alarm' ? '#c62828' : undefined, fontWeight: r.status === 'alarm' ? 700 : undefined }}>{r.tubingPressure.toFixed(1)}</td>
+                <td className="frac-td frac-td--num">{r.casingPressure.toFixed(1)}</td>
+                <td className="frac-td frac-td--num" style={{ color: r.status === 'warning' ? '#e65100' : undefined, fontWeight: r.status === 'warning' ? 700 : undefined }}>{r.sandRatio.toFixed(1)}</td>
+                <td className="frac-td frac-td--num">{r.sandRate}</td>
+                <td className="frac-td frac-td--num">{r.cumFluid.toFixed(1)}</td>
+                <td className="frac-td frac-td--num">{r.cumSand.toFixed(2)}</td>
+                <td className="frac-td">
+                  <span className="frac-stage-tag" style={{ color: STAGE_COLOR[r.stage], background: `${STAGE_COLOR[r.stage]}1a` }}>{r.stage}</span>
+                </td>
+                <td className="frac-td">
+                  {r.status === 'normal' && <span className="frac-status frac-status--normal">正常</span>}
+                  {r.status === 'warning' && <span className="frac-status frac-status--warning">砂比偏高</span>}
+                  {r.status === 'alarm' && <span className="frac-status frac-status--alarm">压力超限</span>}
+                </td>
+              </tr>
+            ))}
+            {rows.length === 0 && (
+              <tr><td colSpan={11} className="frac-empty">无符合条件的施工记录</td></tr>
+            )}
+          </tbody>
+        </table>
       </div>
     </div>
   )
