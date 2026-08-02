@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceArea
 } from 'recharts'
 import { DatasetList, MOCK_DATASETS, type Dataset } from './dataset-list'
 
@@ -207,7 +207,7 @@ const LOG_TRACKS = [
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-type VizChartType = 'production' | 'welllog' | 'fractable'
+type VizChartType = 'faccurve' | 'production' | 'welllog' | 'fractable'
 
 interface VisualizationPageProps {
   onBack?: () => void
@@ -226,7 +226,7 @@ export function VisualizationPage({ onBack }: VisualizationPageProps) {
   const [categories, setCategories] = useState<VizFieldCategory[]>(DEFAULT_CATEGORIES)
 
   // Tabs
-  const [activeChart, setActiveChart] = useState<VizChartType>('production')
+  const [activeChart, setActiveChart] = useState<VizChartType>('faccurve')
 
   // Welllog controls
   const [selectedWell, setSelectedWell] = useState('苏36-11井')
@@ -327,7 +327,7 @@ export function VisualizationPage({ onBack }: VisualizationPageProps) {
               </md-icon>
               <md-icon class="ft-well-section-icon">water_drop</md-icon>
               <span className="ft-well-header-title">井列表</span>
-              {activeChart === 'welllog' || activeChart === 'fractable' ? (
+              {activeChart === 'welllog' || activeChart === 'fractable' || activeChart === 'faccurve' ? (
                 <span className="ft-well-count">单选</span>
               ) : (
                 <span className="ft-well-count">{selectedWells.size}/{WELL_LIST.length}</span>
@@ -343,7 +343,7 @@ export function VisualizationPage({ onBack }: VisualizationPageProps) {
                 )}
                 <ul className="ft-well-list">
                   {WELL_LIST.map(w => {
-                    if (activeChart === 'welllog' || activeChart === 'fractable') {
+                    if (activeChart === 'welllog' || activeChart === 'fractable' || activeChart === 'faccurve') {
                       const isSelected = selectedWell === w.name
                       return (
                         <li key={w.id} className={`ft-well-item${isSelected ? ' ft-well-item--checked' : ''}`}>
@@ -459,6 +459,13 @@ export function VisualizationPage({ onBack }: VisualizationPageProps) {
         <div className="viz-tabs-bar">
           <div className="viz-tabs">
             <button
+              className={`viz-tab${activeChart === 'faccurve' ? ' viz-tab--active' : ''}`}
+              onClick={() => setActiveChart('faccurve')}
+            >
+              <md-icon>timeline</md-icon>
+              压裂施工曲线图
+            </button>
+            <button
               className={`viz-tab${activeChart === 'production' ? ' viz-tab--active' : ''}`}
               onClick={() => setActiveChart('production')}
             >
@@ -489,6 +496,9 @@ export function VisualizationPage({ onBack }: VisualizationPageProps) {
 
         {/* 图表区 */}
         <div className="viz-chart-area">
+          {activeChart === 'faccurve' && (
+            <FracCurveChart well={selectedWell} onWellChange={setSelectedWell} />
+          )}
           {activeChart === 'production' && (
             <ProductionChart fields={checkedFields} />
           )}
@@ -500,6 +510,182 @@ export function VisualizationPage({ onBack }: VisualizationPageProps) {
           )}
         </div>
       </main>
+    </div>
+  )
+}
+
+// ── 压裂施工曲线图（支持框选缩放、折线/阶梯切换）────────────────────────────────
+
+interface FracCurveRow {
+  elapsed: number
+  rate: number
+  tubing: number
+  casing: number
+  sandRatio: number
+  stage: string
+}
+
+const FRAC_STAGE_COLOR: Record<string, string> = {
+  前置液: '#1565c0', 携砂液: '#e65100', 顶替液: '#2e7d32',
+}
+
+function FracCurveChart({ well, onWellChange }: { well: string; onWellChange: (w: string) => void }) {
+  const rows = TABLE_DATASETS[0].rows as unknown as FracCurveRow[]
+  const maxElapsed = rows.length ? rows[rows.length - 1].elapsed : 0
+
+  const [stepped, setStepped] = useState(false)
+  const [domain, setDomain] = useState<[number, number]>([0, maxElapsed])
+  const [refLeft, setRefLeft] = useState<number | null>(null)
+  const [refRight, setRefRight] = useState<number | null>(null)
+
+  const zoomed = domain[0] !== 0 || domain[1] !== maxElapsed
+
+  // 施工阶段背景带
+  const bands = rows.reduce<{ stage: string; x1: number; x2: number }[]>((acc, r) => {
+    const last = acc[acc.length - 1]
+    if (last && last.stage === r.stage) last.x2 = r.elapsed
+    else acc.push({ stage: r.stage, x1: r.elapsed, x2: r.elapsed })
+    return acc
+  }, [])
+
+  const commitZoom = () => {
+    if (refLeft == null || refRight == null || refLeft === refRight) {
+      setRefLeft(null); setRefRight(null); return
+    }
+    const [a, b] = [refLeft, refRight].sort((x, y) => x - y)
+    setDomain([a, b])
+    setRefLeft(null); setRefRight(null)
+  }
+
+  const zoomBy = (factor: number) => {
+    const [a, b] = domain
+    const center = (a + b) / 2
+    const half = ((b - a) / 2) * factor
+    setDomain([Math.max(0, Math.round(center - half)), Math.min(maxElapsed, Math.round(center + half))])
+  }
+
+  const lineType = stepped ? 'stepAfter' : 'monotone'
+
+  return (
+    <div className="prod-chart-wrap">
+      {/* 工具栏 */}
+      <div className="fc-toolbar">
+        <div className="fc-toolbar-left">
+          <span className="viz-label">井名：</span>
+          <select className="viz-select" value={well} onChange={e => onWellChange(e.target.value)}>
+            {WELL_LIST.map(w => <option key={w.id} value={w.name}>{w.name}</option>)}
+          </select>
+          <span className="fc-divider" />
+          <span className="viz-label">图形样式：</span>
+          <div className="fc-segment" role="group" aria-label="曲线样式切换">
+            <button
+              className={`fc-seg-btn${!stepped ? ' fc-seg-btn--active' : ''}`}
+              onClick={() => setStepped(false)}
+              aria-pressed={!stepped}
+            >
+              <md-icon>show_chart</md-icon>折线
+            </button>
+            <button
+              className={`fc-seg-btn${stepped ? ' fc-seg-btn--active' : ''}`}
+              onClick={() => setStepped(true)}
+              aria-pressed={stepped}
+            >
+              <md-icon>stairs</md-icon>阶梯
+            </button>
+          </div>
+        </div>
+        <div className="fc-toolbar-right">
+          <span className="fc-hint">框选图表区可放大</span>
+          <button className="viz-tool-btn" title="放大" onClick={() => zoomBy(0.6)}><md-icon>zoom_in</md-icon></button>
+          <button className="viz-tool-btn" title="缩小" onClick={() => zoomBy(1.6)}><md-icon>zoom_out</md-icon></button>
+          <button className="viz-tool-btn" title="重置缩放" onClick={() => setDomain([0, maxElapsed])} disabled={!zoomed}>
+            <md-icon>restart_alt</md-icon>
+          </button>
+        </div>
+      </div>
+
+      {/* 图表 */}
+      <div className="prod-chart-body">
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart
+            data={rows}
+            margin={{ top: 12, right: 56, left: 8, bottom: 8 }}
+            onMouseDown={(e: { activeLabel?: string | number }) => { if (e && e.activeLabel != null) setRefLeft(Number(e.activeLabel)) }}
+            onMouseMove={(e: { activeLabel?: string | number }) => { if (refLeft != null && e && e.activeLabel != null) setRefRight(Number(e.activeLabel)) }}
+            onMouseUp={commitZoom}
+          >
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--md-sys-color-outline-variant)" />
+            {bands.map((b, i) => (
+              <ReferenceArea
+                key={i}
+                yAxisId="rate"
+                x1={b.x1}
+                x2={b.x2}
+                fill={FRAC_STAGE_COLOR[b.stage] ?? '#999'}
+                fillOpacity={0.06}
+                strokeOpacity={0}
+              />
+            ))}
+            <XAxis
+              dataKey="elapsed"
+              type="number"
+              domain={domain}
+              allowDataOverflow
+              tickFormatter={(v) => `${Math.round(Number(v))}`}
+              tick={{ fontSize: 11, fill: 'var(--md-sys-color-on-surface-variant)' }}
+              tickLine={false}
+              label={{ value: '施工时长 (min)', position: 'insideBottom', offset: -4, fontSize: 11, fill: 'var(--md-sys-color-on-surface-variant)' }}
+            />
+            <YAxis
+              yAxisId="rate"
+              orientation="left"
+              width={52}
+              tick={{ fontSize: 11, fill: '#1565c0' }}
+              tickLine={false}
+              axisLine={false}
+              label={{ value: '排量/砂比', angle: -90, position: 'insideLeft', fontSize: 11, fill: '#1565c0' }}
+            />
+            <YAxis
+              yAxisId="pressure"
+              orientation="right"
+              width={52}
+              tick={{ fontSize: 11, fill: '#c62828' }}
+              tickLine={false}
+              axisLine={false}
+              label={{ value: '压力 (MPa)', angle: 90, position: 'insideRight', fontSize: 11, fill: '#c62828' }}
+            />
+            <Tooltip
+              contentStyle={{
+                fontSize: 12,
+                background: 'var(--md-sys-color-surface)',
+                border: '1px solid var(--md-sys-color-outline-variant)',
+                borderRadius: 8,
+              }}
+              labelStyle={{ color: 'var(--md-sys-color-on-surface)', fontWeight: 600 }}
+              labelFormatter={(v) => `施工时长 ${v} min`}
+            />
+            <Legend wrapperStyle={{ fontSize: 12, paddingTop: 4 }} iconType="circle" iconSize={8} />
+            <Line yAxisId="rate" type={lineType} dataKey="rate" name="施工排量 (m³/min)" stroke="#1565c0" dot={false} strokeWidth={1.8} isAnimationActive={false} />
+            <Line yAxisId="rate" type={lineType} dataKey="sandRatio" name="砂比 (%)" stroke="#2e7d32" dot={false} strokeWidth={1.8} isAnimationActive={false} />
+            <Line yAxisId="pressure" type={lineType} dataKey="tubing" name="油压 (MPa)" stroke="#c62828" dot={false} strokeWidth={1.8} isAnimationActive={false} />
+            <Line yAxisId="pressure" type={lineType} dataKey="casing" name="套压 (MPa)" stroke="#e65100" dot={false} strokeWidth={1.8} isAnimationActive={false} />
+            {refLeft != null && refRight != null && (
+              <ReferenceArea yAxisId="rate" x1={refLeft} x2={refRight} fill="#1565c0" fillOpacity={0.12} strokeOpacity={0.3} />
+            )}
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+
+      {/* 阶段图例 */}
+      <div className="fc-stage-legend">
+        {bands.map((b, i) => (
+          <span key={i} className="fc-stage-item">
+            <span className="fc-stage-swatch" style={{ background: FRAC_STAGE_COLOR[b.stage] ?? '#999' }} />
+            {b.stage}
+            <span className="fc-stage-range">{b.x1}–{b.x2} min</span>
+          </span>
+        ))}
+      </div>
     </div>
   )
 }
