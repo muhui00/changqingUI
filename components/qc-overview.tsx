@@ -469,7 +469,6 @@ function generateDatasetContent(datasetId: string): DatasetContent {
 }
 
 export function QCOverview({ onCardClick, hoveredCard, datasetId = '1', datasetMeta, qced = true }: QCOverviewProps) {
-  const getScoreLevel = (s: number) => (s >= 90 ? '优' : s >= 80 ? '良' : s >= 70 ? '中' : '差')
   const getScoreColor = (s: number) => (s >= 90 ? 'var(--app-color-success)' : s >= 75 ? 'var(--app-color-warning)' : 'var(--md-sys-color-error)')
 
   // 当前数据集元信息（优先使用父级传入的实时元信息，兜底静态列表）
@@ -562,21 +561,6 @@ export function QCOverview({ onCardClick, hoveredCard, datasetId = '1', datasetM
               <span className="overview-tag overview-tag--date">更新: {meta?.updatedAt ?? '2024-07-20'}</span>
             </div>
           </div>
-          <div className="overview-score-block">
-            <div
-              className="overview-score-ring"
-              style={{ borderColor: getScoreColor(overallScore) }}
-              aria-label={`综合评分 ${overallScore} 分`}
-            >
-              <span className="md-typescale-headline-medium overview-score-num" style={{ color: getScoreColor(overallScore) }}>
-                {overallScore}
-              </span>
-              <span className="md-typescale-label-small overview-score-label">综合评分</span>
-            </div>
-            <div className="overview-score-level md-typescale-label-large" style={{ color: getScoreColor(overallScore) }}>
-              质量{getScoreLevel(overallScore)}
-            </div>
-          </div>
         </div>
 
         {/* 四维质量雷达：左侧关键指标 + 右侧雷达图（复核前后） */}
@@ -605,8 +589,7 @@ export function QCOverview({ onCardClick, hoveredCard, datasetId = '1', datasetM
           </div>
           {/* 右侧：雷达图（复核前 vs 复核后） */}
           <div className="overview-radar-chart">
-            <div className="md-typescale-label-medium overview-section-label">四维质量雷达</div>
-            <RadarChart dimensions={RADAR_DIMS} size={220} />
+            <RadarChart dimensions={RADAR_DIMS} size={240} />
             <div className="overview-radar-legend">
               <span className="overview-radar-legend-item">
                 <span className="overview-radar-swatch overview-radar-swatch--before" />

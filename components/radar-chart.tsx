@@ -17,8 +17,9 @@ export function RadarChart({ dimensions, size = 240 }: RadarChartProps) {
   const n = dimensions.length
   const cx = size / 2
   const cy = size / 2
-  // 轴标签在外部渲染，无需额外内边距
-  const r = size / 2 - 24
+  // viewBox 四周预留 pad，保证轴标签不被裁切
+  const pad = 30
+  const r = size / 2 - 18
 
   const getPoint = (index: number, radius: number): [number, number] => {
     const angle = (index / n) * 2 * Math.PI - Math.PI / 2
@@ -46,7 +47,7 @@ export function RadarChart({ dimensions, size = 240 }: RadarChartProps) {
     <svg
       width={size}
       height={size}
-      viewBox={`0 0 ${size} ${size}`}
+      viewBox={`${-pad} ${-pad} ${size + pad * 2} ${size + pad * 2}`}
       role="img"
       aria-label="四维质量雷达图"
     >
