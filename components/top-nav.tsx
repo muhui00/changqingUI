@@ -4,14 +4,16 @@ import { useState } from 'react'
 
 interface TopNavProps {
   currentDataset?: string
-  activePage?: 'overview' | 'report-center' | 'report-preview' | 'sample-management' | 'visualization'
+  activePage?: 'overview' | 'report-center' | 'report-preview' | 'sample-management' | 'visualization' | 'field-standard' | 'qc-rule'
   onNavOverview?: () => void
   onNavReportCenter?: () => void
   onNavSampleManagement?: () => void
   onNavVisualization?: () => void
+  onNavFieldStandard?: () => void
+  onNavQCRule?: () => void
 }
 
-export function TopNav({ currentDataset, activePage = 'overview', onNavOverview, onNavReportCenter, onNavSampleManagement, onNavVisualization }: TopNavProps) {
+export function TopNav({ currentDataset, activePage = 'overview', onNavOverview, onNavReportCenter, onNavSampleManagement, onNavVisualization, onNavFieldStandard, onNavQCRule }: TopNavProps) {
   const [achieveMenuOpen, setAchieveMenuOpen] = useState(false)
   const [configMenuOpen, setConfigMenuOpen] = useState(false)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
@@ -82,7 +84,7 @@ export function TopNav({ currentDataset, activePage = 'overview', onNavOverview,
         {/* 质控配置下拉 */}
         <div className="top-nav-dropdown-wrap" style={{ position: 'relative' }}>
           <button
-            className="top-nav-link"
+            className={`top-nav-link${activePage === 'field-standard' || activePage === 'qc-rule' ? ' top-nav-link--active' : ''}`}
             id="config-btn"
             aria-haspopup="menu"
             aria-expanded={configMenuOpen}
@@ -97,11 +99,11 @@ export function TopNav({ currentDataset, activePage = 'overview', onNavOverview,
             open={configMenuOpen || undefined}
             onclosed={() => setConfigMenuOpen(false)}
           >
-            <md-menu-item>
+            <md-menu-item onClick={() => { setConfigMenuOpen(false); onNavFieldStandard?.() }}>
               <md-icon slot="start">library_books</md-icon>
               <div slot="headline">字段标准库</div>
             </md-menu-item>
-            <md-menu-item>
+            <md-menu-item onClick={() => { setConfigMenuOpen(false); onNavQCRule?.() }}>
               <md-icon slot="start">rule</md-icon>
               <div slot="headline">质控规则库</div>
             </md-menu-item>

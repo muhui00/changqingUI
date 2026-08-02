@@ -11,8 +11,10 @@ import { ReportPreview } from './report-preview'
 import { ConsistencyWorkspace, type QCWorkspaceType } from './consistency-workspace'
 import { SampleManagement } from './sample-management'
 import { VisualizationPage } from './visualization-page'
+import { FieldStandardLibrary } from './field-standard-library'
+import { QCRuleLibrary } from './qc-rule-library'
 
-type AppPage = 'overview' | 'report-center' | 'report-preview' | 'qc-workspace' | 'sample-management' | 'visualization'
+type AppPage = 'overview' | 'report-center' | 'report-preview' | 'qc-workspace' | 'sample-management' | 'visualization' | 'field-standard' | 'qc-rule'
 
 export function HomeClient() {
   const [datasets, setDatasets] = useState<Dataset[]>(MOCK_DATASETS)
@@ -48,6 +50,8 @@ export function HomeClient() {
   const handleNavToOverview = () => setPage('overview')
   const handleNavToSampleManagement = () => setPage('sample-management')
   const handleNavToVisualization = () => setPage('visualization')
+  const handleNavToFieldStandard = () => setPage('field-standard')
+  const handleNavToQCRule = () => setPage('qc-rule')
 
   const handlePreviewReport = (id: string) => {
     setPreviewReportId(id)
@@ -68,9 +72,40 @@ export function HomeClient() {
         <TopNav activePage="visualization"
           onNavOverview={handleNavToOverview} onNavReportCenter={handleNavToReportCenter}
           onNavSampleManagement={handleNavToSampleManagement}
-          onNavVisualization={handleNavToVisualization} />
+          onNavVisualization={handleNavToVisualization}
+          onNavFieldStandard={handleNavToFieldStandard} onNavQCRule={handleNavToQCRule} />
         <div className="workspace" style={{ overflow: 'hidden' }}>
           <VisualizationPage onBack={handleNavToOverview} />
+        </div>
+      </div>
+    )
+  }
+
+  // ── 字段标准库 ──
+  if (page === 'field-standard') {
+    return (
+      <div className="app-shell">
+        <TopNav activePage="field-standard"
+          onNavOverview={handleNavToOverview} onNavReportCenter={handleNavToReportCenter}
+          onNavSampleManagement={handleNavToSampleManagement} onNavVisualization={handleNavToVisualization}
+          onNavFieldStandard={handleNavToFieldStandard} onNavQCRule={handleNavToQCRule} />
+        <div className="rc-page-shell">
+          <FieldStandardLibrary />
+        </div>
+      </div>
+    )
+  }
+
+  // ── 质控规则库 ──
+  if (page === 'qc-rule') {
+    return (
+      <div className="app-shell">
+        <TopNav activePage="qc-rule"
+          onNavOverview={handleNavToOverview} onNavReportCenter={handleNavToReportCenter}
+          onNavSampleManagement={handleNavToSampleManagement} onNavVisualization={handleNavToVisualization}
+          onNavFieldStandard={handleNavToFieldStandard} onNavQCRule={handleNavToQCRule} />
+        <div className="rc-page-shell">
+          <QCRuleLibrary />
         </div>
       </div>
     )
@@ -82,7 +117,8 @@ export function HomeClient() {
       <div className="app-shell">
         <TopNav currentDataset="苏里格区块2024年综合数据集" activePage="sample-management"
           onNavOverview={handleNavToOverview} onNavReportCenter={handleNavToReportCenter}
-          onNavSampleManagement={handleNavToSampleManagement} onNavVisualization={handleNavToVisualization} />
+          onNavSampleManagement={handleNavToSampleManagement} onNavVisualization={handleNavToVisualization}
+          onNavFieldStandard={handleNavToFieldStandard} onNavQCRule={handleNavToQCRule} />
         <div className="rc-page-shell">
           <SampleManagement onBack={handleNavToOverview} />
         </div>
@@ -96,7 +132,8 @@ export function HomeClient() {
       <div className="app-shell">
         <TopNav currentDataset="苏里格区块2024年综合数据集" activePage="report-center"
           onNavOverview={handleNavToOverview} onNavReportCenter={handleNavToReportCenter}
-          onNavSampleManagement={handleNavToSampleManagement} onNavVisualization={handleNavToVisualization} />
+          onNavSampleManagement={handleNavToSampleManagement} onNavVisualization={handleNavToVisualization}
+          onNavFieldStandard={handleNavToFieldStandard} onNavQCRule={handleNavToQCRule} />
         <div className="rc-page-shell">
           <ReportCenter onPreview={handlePreviewReport} />
         </div>
@@ -110,7 +147,8 @@ export function HomeClient() {
       <div className="app-shell">
         <TopNav currentDataset="苏里格区块2024年综合数据集" activePage="report-preview"
           onNavOverview={handleNavToOverview} onNavReportCenter={handleNavToReportCenter}
-          onNavSampleManagement={handleNavToSampleManagement} onNavVisualization={handleNavToVisualization} />
+          onNavSampleManagement={handleNavToSampleManagement} onNavVisualization={handleNavToVisualization}
+          onNavFieldStandard={handleNavToFieldStandard} onNavQCRule={handleNavToQCRule} />
         <ReportPreview reportId={previewReportId} onBack={handleBackToReportCenter} />
       </div>
     )
@@ -122,7 +160,8 @@ export function HomeClient() {
       <div className="app-shell">
         <TopNav currentDataset="苏里格区块2024年综合数据集" activePage="overview"
           onNavOverview={handleNavToOverview} onNavReportCenter={handleNavToReportCenter}
-          onNavSampleManagement={handleNavToSampleManagement} onNavVisualization={handleNavToVisualization} />
+          onNavSampleManagement={handleNavToSampleManagement} onNavVisualization={handleNavToVisualization}
+          onNavFieldStandard={handleNavToFieldStandard} onNavQCRule={handleNavToQCRule} />
         <div className="workspace">
           <DatasetList datasets={datasets} onDatasetsChange={setDatasets}
             selectedId={selectedDatasetId} onSelect={setSelectedDatasetId}
@@ -159,7 +198,8 @@ export function HomeClient() {
     <div className="app-shell">
       <TopNav currentDataset="苏里格区块2024年综合数据集" activePage="overview"
         onNavOverview={handleNavToOverview} onNavReportCenter={handleNavToReportCenter}
-        onNavSampleManagement={handleNavToSampleManagement} onNavVisualization={handleNavToVisualization} />
+        onNavSampleManagement={handleNavToSampleManagement} onNavVisualization={handleNavToVisualization}
+          onNavFieldStandard={handleNavToFieldStandard} onNavQCRule={handleNavToQCRule} />
       <div className="workspace">
         <DatasetList datasets={datasets} onDatasetsChange={setDatasets}
           selectedId={selectedDatasetId} onSelect={setSelectedDatasetId}
