@@ -32,7 +32,7 @@ const DATASET_CONTENT: Record<string, DatasetContent> = {
       { label: '一致性', score: 88, anomalyCount: 12, reviewedCount: 8 },
       { label: '相关性', score: 79, anomalyCount: 23, reviewedCount: 15 },
       { label: '完整性', score: 91, anomalyCount: 7, reviewedCount: 7 },
-      { label: '分布范围', score: 83, anomalyCount: 18, reviewedCount: 10 },
+      { label: '分布', score: 83, anomalyCount: 18, reviewedCount: 10 },
     ],
     stats: [
       { icon: 'oil_barrel', label: '覆盖井数', value: '156口' },
@@ -70,7 +70,7 @@ const DATASET_CONTENT: Record<string, DatasetContent> = {
       { label: '一致性', score: 94, anomalyCount: 4, reviewedCount: 4 },
       { label: '相关性', score: 90, anomalyCount: 8, reviewedCount: 8 },
       { label: '完整性', score: 96, anomalyCount: 2, reviewedCount: 2 },
-      { label: '分布范围', score: 89, anomalyCount: 6, reviewedCount: 6 },
+      { label: '分布', score: 89, anomalyCount: 6, reviewedCount: 6 },
     ],
     stats: [
       { icon: 'oil_barrel', label: '覆盖井数', value: '88口' },
@@ -108,7 +108,7 @@ const DATASET_CONTENT: Record<string, DatasetContent> = {
       { label: '一致性', score: 72, anomalyCount: 21, reviewedCount: 9 },
       { label: '相关性', score: 68, anomalyCount: 30, reviewedCount: 11 },
       { label: '完整性', score: 80, anomalyCount: 14, reviewedCount: 6 },
-      { label: '分布范围', score: 74, anomalyCount: 25, reviewedCount: 8 },
+      { label: '分布', score: 74, anomalyCount: 25, reviewedCount: 8 },
     ],
     stats: [
       { icon: 'oil_barrel', label: '覆盖井数', value: '204口' },
@@ -146,7 +146,7 @@ const DATASET_CONTENT: Record<string, DatasetContent> = {
       { label: '一致性', score: 96, anomalyCount: 3, reviewedCount: 3 },
       { label: '相关性', score: 93, anomalyCount: 5, reviewedCount: 5 },
       { label: '完整性', score: 97, anomalyCount: 1, reviewedCount: 1 },
-      { label: '分布范围', score: 94, anomalyCount: 4, reviewedCount: 4 },
+      { label: '分布', score: 94, anomalyCount: 4, reviewedCount: 4 },
     ],
     stats: [
       { icon: 'oil_barrel', label: '覆盖井数', value: '132口' },
@@ -434,7 +434,7 @@ function generateDatasetContent(datasetId: string): DatasetContent {
       { label: '一致性', score: consistency, anomalyCount: rand(4, 20), reviewedCount: rand(3, 12) },
       { label: '相关性', score: correlation, anomalyCount: rand(6, 25), reviewedCount: rand(4, 15) },
       { label: '完整性', score: completeness, anomalyCount: rand(2, 14), reviewedCount: rand(2, 8) },
-      { label: '分布范围', score: distribution, anomalyCount: rand(5, 22), reviewedCount: rand(4, 10) },
+      { label: '分布', score: distribution, anomalyCount: rand(5, 22), reviewedCount: rand(4, 10) },
     ],
     stats: [
       { icon: 'oil_barrel', label: '覆盖井数', value: `${wells}口` },
