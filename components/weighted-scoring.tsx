@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import { RadarChart } from './radar-chart'
+import { QCTemplateMode } from './qc-template-mode'
 
 // ─── 类型 ────────────────────────────────────────────────────────────────────
 type SchemeStatus = '草稿' | '试算中' | '待审核' | '启用' | '停用' | '已归档'
@@ -139,6 +140,7 @@ function gradeOf(score: number): GradeThreshold {
 
 // ─── 主组件 ───────────────────────────────────────────────────────────────────
 export function WeightedScoring() {
+  const [objectMode, setObjectMode] = useState<'template' | 'scheme'>('template')
   const [selectedId, setSelectedId] = useState('1')
   const [search, setSearch] = useState('')
   const [fStatus, setFStatus] = useState<SchemeStatus | '全部状态'>('全部状态')
@@ -278,6 +280,21 @@ export function WeightedScoring() {
 
   const ruleWeightTotal = RULE_SCORES[ruleDim].reduce((s, r) => s + r.weight, 0)
 
+  const modeSwitch = (
+    <div className="sc-obj-switch" role="tablist" aria-label="配置对象">
+      <button role="tab" aria-selected={objectMode === 'template'}
+        className={`sc-obj-btn${objectMode === 'template' ? ' sc-obj-btn--active' : ''}`}
+        onClick={() => setObjectMode('template')}>
+        <md-icon>rule_folder</md-icon>质控模板
+      </button>
+      <button role="tab" aria-selected={objectMode === 'scheme'}
+        className={`sc-obj-btn${objectMode === 'scheme' ? ' sc-obj-btn--active' : ''}`}
+        onClick={() => setObjectMode('scheme')}>
+        <md-icon>functions</md-icon>评分方案
+      </button>
+    </div>
+  )
+
   return (
     <div className="sc-workbench">
       {/* 页面头部 */}
@@ -289,24 +306,42 @@ export function WeightedScoring() {
         <div className="sc-header-row">
           <div>
             <h1 className="md-typescale-headline-small sc-page-title">综合加权评分</h1>
-            <p className="md-typescale-body-medium sc-page-subtitle">配置四维质量权重、评分等级与业务门槛，并通过真实任务结果进行试算</p>
+            <p className="md-typescale-body-medium sc-page-subtitle">按区块配置质控模板，统一四维质量权重、评分等级与业务门槛，并通过历史数据进行联合标定与试算</p>
           </div>
           <div className="sc-header-actions">
-            <button className="lib-btn lib-btn--ghost" onClick={() => setNewOpen(true)}><md-icon>add</md-icon>新建模板</button>
-            <button className="lib-btn lib-btn--ghost" onClick={handleCopyScheme}><md-icon>content_copy</md-icon>复制模板</button>
-            <button className="lib-btn lib-btn--ghost"><md-icon>history</md-icon>查看版本</button>
-            <button className="lib-btn lib-btn--ghost"><md-icon>save</md-icon>保存草稿</button>
-            <button className="lib-btn lib-btn--primary" disabled={!weightValid}><md-icon>calculate</md-icon>试算</button>
+            {objectMode === 'template' ? (
+              <>
+                <button className="lib-btn lib-btn--ghost"><md-icon>add</md-icon>新建质控模板</button>
+                <button className="lib-btn lib-btn--ghost"><md-icon>content_copy</md-icon>复制模板</button>
+                <button className="lib-btn lib-btn--ghost"><md-icon>history</md-icon>查看版本</button>
+                <button className="lib-btn lib-btn--ghost"><md-icon>save</md-icon>保存草稿</button>
+                <button className="lib-btn lib-btn--ghost"><md-icon>science</md-icon>标定 / 试算</button>
+                <button className="lib-btn lib-btn--primary"><md-icon>send</md-icon>提交审核</button>
+              </>
+            ) : (
+              <>
+                <button className="lib-btn lib-btn--ghost" onClick={() => setNewOpen(true)}><md-icon>add</md-icon>新建评分方案</button>
+                <button className="lib-btn lib-btn--ghost" onClick={handleCopyScheme}><md-icon>content_copy</md-icon>复制方案</button>
+                <button className="lib-btn lib-btn--ghost"><md-icon>history</md-icon>查看版本</button>
+                <button className="lib-btn lib-btn--ghost"><md-icon>save</md-icon>保存草稿</button>
+                <button className="lib-btn lib-btn--primary" disabled={!weightValid}><md-icon>calculate</md-icon>试算</button>
+              </>
+            )}
           </div>
         </div>
       </div>
 
       {/* 三栏工作台 */}
       <div className="sc-cols">
-        {/* ── A 区：评分模板区 ── */}
-        <aside className="sc-scheme-panel" aria-label="评分模板区">
+        {objectMode === 'template' ? (
+          <QCTemplateMode modeSwitch={modeSwitch} />
+        ) : (
+        <>
+        {/* ── A 区：评分方案区 ── */}
+        <aside className="sc-scheme-panel" aria-label="评分方案区">
+          {modeSwitch}
           <div className="sc-panel-head">
-            <span className="sc-panel-title">评分模板</span>
+            <span className="sc-panel-title">评分方案</span>
             <span className="sc-panel-count">{filtered.length}</span>
           </div>
           <div className="sc-scheme-filters">
@@ -792,6 +827,8 @@ export function WeightedScoring() {
             ))}
           </div>
         </aside>
+        </>
+        )}
       </div>
 
       {newOpen && (
