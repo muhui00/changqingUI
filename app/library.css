@@ -629,3 +629,199 @@
   .lib-form-grid { grid-template-columns: 1fr; }
   .lib-testrun-metrics { grid-template-columns: repeat(2, 1fr); }
 }
+
+/* =====================================================================
+   新版：字段标准库 / 质控规则库增强样式
+   ===================================================================== */
+
+/* 页头包裹 */
+.lib-page-header { display: flex; flex-direction: column; gap: 8px; }
+
+/* 头部带角标按钮 */
+.lib-btn--badge { position: relative; }
+.lib-btn-count {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 18px; height: 18px; padding: 0 5px; margin-left: 2px;
+  border-radius: 9px; background: var(--md-sys-color-surface-container-highest);
+  color: var(--md-sys-color-on-surface); font-size: 11px; font-weight: 700;
+}
+.lib-btn-dot {
+  position: absolute; top: -3px; right: -3px; width: 8px; height: 8px;
+  border-radius: 50%; background: var(--md-sys-color-error);
+  border: 1.5px solid var(--md-sys-color-surface);
+}
+
+/* 紧凑指标 chips */
+.lib-metrics { display: flex; gap: 10px; flex-wrap: wrap; }
+.lib-metric-chip {
+  display: flex; flex-direction: column; gap: 2px; min-width: 120px;
+  padding: 10px 14px; border-radius: 10px;
+  border: 1px solid var(--md-sys-color-outline-variant);
+  background: var(--md-sys-color-surface-container-lowest);
+  cursor: pointer; text-align: left;
+  transition: border-color 0.12s, background 0.12s;
+  font-family: var(--md-ref-typeface-plain);
+}
+.lib-metric-chip:hover { border-color: var(--md-sys-color-primary); background: var(--md-sys-color-surface-container-low); }
+.lib-metric-num { font-size: 22px; font-weight: 700; line-height: 1.1; color: var(--md-sys-color-on-surface); font-variant-numeric: tabular-nums; }
+.lib-metric-txt { font-size: 12px; color: var(--md-sys-color-on-surface-variant); }
+.lib-metric-chip--ok .lib-metric-num { color: var(--app-color-success); }
+.lib-metric-chip--danger { border-color: color-mix(in srgb, var(--md-sys-color-error) 40%, transparent); }
+.lib-metric-chip--danger .lib-metric-num { color: var(--md-sys-color-error); }
+
+/* 视图切换 */
+.lib-view-switch {
+  display: inline-flex; border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: 8px; overflow: hidden;
+}
+.lib-view-btn {
+  display: inline-flex; align-items: center; gap: 5px; padding: 7px 14px;
+  border: none; background: var(--md-sys-color-surface);
+  color: var(--md-sys-color-on-surface-variant); font-size: 12.5px;
+  font-family: var(--md-ref-typeface-plain); cursor: pointer;
+}
+.lib-view-btn md-icon { font-size: 16px; }
+.lib-view-btn + .lib-view-btn { border-left: 1px solid var(--md-sys-color-outline-variant); }
+.lib-view-btn--active { background: var(--md-sys-color-primary-container); color: var(--md-sys-color-primary); font-weight: 600; }
+
+/* 表格补充 */
+.lib-th-check, .lib-th-expand { width: 40px; text-align: center; }
+.lib-th-cov { min-width: 156px; }
+.lib-th-sticky-name { position: sticky; left: 0; z-index: 2; background: var(--md-sys-color-surface-container-low); }
+.lib-table td.lib-cell-name-sticky { position: sticky; left: 0; z-index: 1; background: inherit; }
+
+/* 展开按钮/行 */
+.lib-expand-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 26px; height: 26px; border: none; background: transparent; cursor: pointer;
+  color: var(--md-sys-color-on-surface-variant); transition: transform 0.15s, color 0.15s;
+}
+.lib-expand-btn md-icon { font-size: 20px; }
+.lib-expand-btn[aria-expanded="true"] { transform: rotate(90deg); color: var(--md-sys-color-primary); }
+.lib-expand-row td { padding: 0 !important; background: var(--md-sys-color-surface-container-lowest); }
+
+/* 四维覆盖点 */
+.lib-dim-cell { display: inline-flex; gap: 5px; align-items: center; }
+.lib-dim-dot {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 22px; height: 22px; border-radius: 6px; font-size: 11px; font-weight: 700;
+}
+.lib-dim-ok { background: color-mix(in srgb, var(--app-color-success) 16%, transparent); color: var(--app-color-success); }
+.lib-dim-miss { background: var(--md-sys-color-surface-container-highest); color: var(--md-sys-color-outline); }
+.lib-dist-cell { text-align: center; }
+
+/* 覆盖度胶囊 + 进度条 */
+.lib-cov-pill {
+  display: inline-flex; align-items: center; gap: 4px; padding: 2px 9px;
+  border-radius: 999px; font-size: 11.5px; font-weight: 700;
+}
+.lib-cov-pill--full { background: color-mix(in srgb, var(--app-color-success) 16%, transparent); color: var(--app-color-success); }
+.lib-cov-pill--gap { background: color-mix(in srgb, var(--app-color-warning) 18%, transparent); color: var(--app-color-warning); }
+.lib-cov-progress { height: 5px; border-radius: 3px; background: var(--md-sys-color-surface-container-highest); overflow: hidden; margin-top: 5px; }
+.lib-cov-progress--total { width: 100%; }
+
+/* 生命周期徽标 */
+.lib-lc-badge {
+  display: inline-block; padding: 1px 8px; border-radius: 6px; font-size: 11.5px; font-weight: 600;
+  background: color-mix(in srgb, #5e35b1 14%, transparent); color: #5e35b1;
+}
+.lib-lc--pre { background: color-mix(in srgb, #1565c0 14%, transparent); color: #1565c0; }
+.lib-lc--mid { background: color-mix(in srgb, #00695c 14%, transparent); color: #00695c; }
+.dark .lib-lc-badge { color: #b39ddb; }
+.dark .lib-lc--pre { color: #90caf9; }
+.dark .lib-lc--mid { color: #80cbc4; }
+
+/* 徽标补充 */
+.lib-badge--blocked { background: var(--md-sys-color-error-container); color: var(--md-sys-color-error); }
+.lib-tag-stack { display: inline-flex; flex-wrap: wrap; gap: 4px; }
+
+/* 展开绑定卡 */
+.lib-binding-card {
+  padding: 16px 20px; border-left: 3px solid var(--md-sys-color-primary);
+  display: flex; flex-direction: column; gap: 12px;
+}
+.lib-binding-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.lib-binding-title { font-size: 13px; font-weight: 700; color: var(--md-sys-color-on-surface); display: inline-flex; align-items: center; gap: 6px; }
+.lib-binding-title md-icon { font-size: 17px; color: var(--md-sys-color-primary); }
+.lib-binding-sum { font-size: 12px; color: var(--md-sys-color-on-surface-variant); }
+.lib-binding-sum--miss { color: var(--app-color-warning); font-weight: 600; }
+.lib-binding-rows { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 10px; }
+.lib-binding-row {
+  display: flex; flex-direction: column; gap: 6px; padding: 12px; border-radius: 10px;
+  background: var(--md-sys-color-surface); border: 1px solid var(--md-sys-color-outline-variant);
+}
+.lib-binding-dim { font-size: 12.5px; font-weight: 700; color: var(--md-sys-color-on-surface); display: inline-flex; align-items: center; gap: 6px; }
+.lib-binding-link {
+  align-self: flex-start; display: inline-flex; align-items: center; gap: 4px;
+  border: none; background: transparent; color: var(--md-sys-color-primary);
+  font-size: 12px; font-weight: 600; cursor: pointer; padding: 0; font-family: var(--md-ref-typeface-plain);
+}
+.lib-binding-link md-icon { font-size: 15px; }
+
+/* 矩阵单元格 */
+.lib-matrix-cell {
+  display: inline-flex; align-items: center; justify-content: center; gap: 4px;
+  padding: 3px 8px; border-radius: 6px; font-size: 11.5px; font-weight: 600;
+  cursor: pointer; border: none; font-family: var(--md-ref-typeface-plain);
+}
+.lib-matrix-cell.lib-dim-ok { background: color-mix(in srgb, var(--app-color-success) 16%, transparent); color: var(--app-color-success); }
+.lib-matrix-cell.lib-dim-miss { background: var(--md-sys-color-surface-container-highest); color: var(--md-sys-color-outline); }
+.lib-table--matrix thead th { text-align: center; }
+.lib-table--matrix .lib-th-sticky-name { text-align: left; }
+
+/* 原子规则卡 */
+.lib-rule-card {
+  display: flex; flex-direction: column; gap: 8px; padding: 14px 16px;
+  border: 1px solid var(--md-sys-color-outline-variant); border-radius: 10px; background: var(--md-sys-color-surface);
+}
+.lib-rule-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.lib-rule-card-sum { font-size: 12.5px; color: var(--md-sys-color-on-surface-variant); line-height: 1.5; }
+
+/* 分组标题行（覆盖旧的窄条定义） */
+.lib-section-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 4px; }
+
+/* 行内提示 */
+.lib-inline-note {
+  display: flex; align-items: flex-start; gap: 6px; font-size: 12px;
+  color: var(--md-sys-color-on-surface-variant); line-height: 1.5;
+}
+.lib-inline-note md-icon { font-size: 15px; margin-top: 1px; }
+
+/* 字段定位（pin） */
+.lib-field-pin { display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 12.5px; }
+.lib-field-pin-sep { color: var(--md-sys-color-outline); }
+
+/* 弹窗宽版 + 头部元信息 */
+.lib-dialog--wide { width: min(920px, calc(100vw - 64px)); }
+.lib-dialog-headmeta { display: flex; align-items: center; gap: 8px; margin-top: 6px; flex-wrap: wrap; }
+.lib-dialog-tags { display: flex; gap: 6px; flex-wrap: wrap; }
+.lib-tabs--dialog { padding: 0 24px; margin: 0 -24px 4px; }
+
+/* 抽屉 */
+.lib-drawer-overlay {
+  position: fixed; inset: 0; z-index: 1000; display: flex; justify-content: flex-end;
+  background: color-mix(in srgb, var(--md-sys-color-scrim) 42%, transparent);
+  animation: lib-fade 0.15s ease;
+}
+.lib-drawer {
+  background: var(--md-sys-color-surface); width: 100%; max-width: 560px; height: 100%;
+  display: flex; flex-direction: column; box-shadow: -12px 0 40px rgba(0,0,0,0.2);
+  animation: lib-drawer-in 0.22s ease;
+}
+.lib-drawer--wide { max-width: 720px; }
+@keyframes lib-drawer-in { from { transform: translateX(24px); opacity: 0.4; } to { transform: translateX(0); opacity: 1; } }
+.lib-drawer-head {
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
+  padding: 18px 22px; border-bottom: 1px solid var(--md-sys-color-outline-variant); flex-shrink: 0;
+}
+.lib-drawer-body { padding: 18px 22px; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; }
+
+/* 口径待确认列表 */
+.lib-issue-item {
+  display: flex; flex-direction: column; gap: 6px; padding: 14px 16px; border-radius: 10px;
+  border: 1px solid var(--md-sys-color-outline-variant); background: var(--md-sys-color-surface);
+}
+.lib-issue-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.lib-issue-title { font-size: 13.5px; font-weight: 700; color: var(--md-sys-color-on-surface); }
+.lib-issue-code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 11.5px; color: var(--md-sys-color-primary); }
+.lib-issue-meta { font-size: 12px; color: var(--md-sys-color-on-surface-variant); line-height: 1.5; }
