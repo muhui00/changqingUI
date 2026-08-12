@@ -1689,7 +1689,7 @@
   cursor: default;
 }
 
-/* 不在模板内的字段：禁用不可配置 */
+/* 不在模板内的字段：禁���不可配置 */
 .nd-field-row--locked {
   cursor: not-allowed;
 }
@@ -2424,13 +2424,14 @@
 }
 
 .rc-list-th--sort {
-  display: flex;
-  align-items: center;
-  gap: 2px;
   cursor: pointer;
 }
 
-.rc-list-th--sort md-icon { font-size: 14px; }
+.rc-list-th--sort md-icon {
+  font-size: 14px;
+  vertical-align: middle;
+  margin-left: 2px;
+}
 .rc-list-th--check { width: 40px; }
 
 .rc-list-row {
@@ -5504,7 +5505,7 @@
 .viz-tool-btn:hover { background: var(--md-sys-color-surface-container-high); }
 .viz-tool-btn md-icon { font-size: 17px; }
 
-/* ── 图表区 ── */
+/* ���─ 图表区 ── */
 .viz-chart-area {
   flex: 1;
   overflow: hidden;
