@@ -1433,11 +1433,84 @@
   color: var(--md-sys-color-error);
 }
 
+/* 质检模板选择器 */
+.nd-tpl-select {
+  width: 100%;
+  border: 1px solid var(--md-sys-color-outline);
+  border-radius: 8px;
+  padding: 8px 12px;
+  background: var(--md-sys-color-surface-container);
+  color: var(--md-sys-color-on-surface);
+  font-family: var(--md-ref-typeface-plain);
+  outline: none;
+  transition: border-color 0.15s;
+  box-sizing: border-box;
+  cursor: pointer;
+}
+.nd-tpl-select:focus {
+  border-color: var(--md-sys-color-primary);
+  background: var(--md-sys-color-surface);
+}
+.nd-tpl-hint {
+  color: var(--md-sys-color-on-surface-variant);
+}
+.nd-tpl-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 2px;
+}
+.nd-tpl-chip {
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-size: 11.5px;
+  background: var(--md-sys-color-primary-container);
+  color: var(--md-sys-color-primary);
+  border: 1px solid color-mix(in srgb, var(--md-sys-color-primary) 30%, transparent);
+}
+
 /* 穿梭框 */
 .nd-shuttle {
+  position: relative;
   display: flex;
   gap: 10px;
   height: 380px;
+}
+
+/* 未选模板时的锁定态 */
+.nd-shuttle--locked > .nd-shuttle-pane,
+.nd-shuttle--locked > .nd-shuttle-btns {
+  opacity: 0.45;
+  filter: grayscale(0.4);
+  pointer-events: none;
+  user-select: none;
+}
+.nd-shuttle-gate {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  text-align: center;
+  padding: 24px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--md-sys-color-surface) 72%, transparent);
+  backdrop-filter: blur(1.5px);
+}
+.nd-shuttle-gate-icon {
+  --md-icon-size: 40px;
+  color: var(--md-sys-color-primary);
+}
+.nd-shuttle-gate-title {
+  color: var(--md-sys-color-on-surface);
+  font-weight: 600;
+}
+.nd-shuttle-gate-desc {
+  color: var(--md-sys-color-on-surface-variant);
+  max-width: 320px;
 }
 
 .nd-shuttle-pane {
@@ -1616,6 +1689,21 @@
   cursor: default;
 }
 
+/* 不在模板内的字段：禁�������不可配置 */
+.nd-field-row--locked {
+  cursor: not-allowed;
+}
+.nd-field-row--locked:hover {
+  background: transparent;
+}
+.nd-field-row--locked .nd-field-name {
+  color: var(--md-sys-color-on-surface-variant);
+  opacity: 0.6;
+}
+.nd-field-row--locked .nd-cbox {
+  cursor: not-allowed;
+}
+
 .nd-field-name {
   flex: 1;
   color: var(--md-sys-color-on-surface);
@@ -1624,6 +1712,11 @@
 .nd-field-done-icon {
   font-size: 14px;
   color: var(--app-color-success);
+}
+
+.nd-field-lock-icon {
+  font-size: 13px;
+  color: var(--md-sys-color-outline);
 }
 
 .nd-cbox {
@@ -2331,13 +2424,14 @@
 }
 
 .rc-list-th--sort {
-  display: flex;
-  align-items: center;
-  gap: 2px;
   cursor: pointer;
 }
 
-.rc-list-th--sort md-icon { font-size: 14px; }
+.rc-list-th--sort md-icon {
+  font-size: 14px;
+  vertical-align: middle;
+  margin-left: 2px;
+}
 .rc-list-th--check { width: 40px; }
 
 .rc-list-row {
@@ -3614,6 +3708,65 @@
 }
 .cs-tool-chip:hover { background: var(--md-sys-color-primary-container); color: var(--md-sys-color-primary); border-color: var(--md-sys-color-primary); }
 .cs-tool-chip md-icon { font-size: 14px; }
+/* 选中态 */
+.cs-tool-chip--active,
+.cs-tool-chip--active:hover {
+  background: var(--md-sys-color-primary);
+  color: var(--md-sys-color-on-primary);
+  border-color: var(--md-sys-color-primary);
+  font-weight: 600;
+}
+.cs-tool-chip--sm { padding: 4px 9px; font-size: 11.5px; }
+.cs-chip-group--wrap { margin-top: 2px; }
+
+/* 表单行：纵向排列（用于带多选 chips 的字段）*/
+.cs-form-row--col { flex-direction: column; align-items: stretch; gap: 6px; }
+
+/* 相关性算法 · 预览结果 */
+.cs-preview-result {
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: 10px;
+  background: var(--md-sys-color-surface-container-low);
+}
+.cs-preview-result-title {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--md-sys-color-on-surface);
+  margin-bottom: 10px;
+}
+.cs-preview-result-title md-icon { color: var(--md-sys-color-primary); }
+.cs-preview-result-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.cs-preview-result-grid > div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.cs-preview-result-grid span {
+  font-size: 11.5px;
+  color: var(--md-sys-color-on-surface-variant);
+}
+.cs-preview-result-grid b {
+  font-size: 15px;
+  color: var(--md-sys-color-on-surface);
+  font-variant-numeric: tabular-nums;
+}
+.cs-preview-result-grid b.cs-val { color: var(--md-sys-color-primary); }
+.cs-preview-result-note {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--md-sys-color-outline-variant);
+  font-size: 11.5px;
+  color: var(--md-sys-color-on-surface-variant);
+}
 
 /* ── 通用 Section ── */
 .cs-section {
@@ -4466,7 +4619,111 @@
 .cs-comp-chart {
   border: 1px solid var(--md-sys-color-outline-variant);
   border-radius: 8px; padding: 8px; background: var(--md-sys-color-surface);
+  min-height: 132px; display: flex; align-items: center;
 }
+.cs-comp-chart > * { width: 100%; }
+
+/* 工具选项：图标 + 推荐标记 */
+.cs-tool-opt { display: block; text-align: left; background: var(--md-sys-color-surface); font-family: var(--md-ref-typeface-plain); }
+.cs-tool-opt-head { display: flex; align-items: center; gap: 6px; }
+.cs-tool-opt-icon { font-size: 17px !important; color: var(--md-sys-color-on-surface-variant); }
+.cs-tool-opt--active .cs-tool-opt-icon { color: var(--md-sys-color-primary); }
+.cs-tool-opt-rec {
+  margin-left: auto; padding: 1px 7px; border-radius: 9px; font-size: 10.5px; font-weight: 600;
+  background: color-mix(in srgb, var(--app-color-success) 16%, transparent); color: var(--app-color-success);
+}
+
+/* 工具方法说明卡 */
+.cs-tool-method {
+  display: flex; gap: 8px; align-items: flex-start; padding: 10px 12px; border-radius: 8px;
+  background: var(--md-sys-color-surface-container-low); border: 1px solid var(--md-sys-color-outline-variant);
+}
+.cs-tool-method > md-icon { color: var(--md-sys-color-primary); flex-shrink: 0; margin-top: 1px; }
+.cs-tool-method-name { font-size: 12.5px; font-weight: 600; color: var(--md-sys-color-on-surface); }
+.cs-tool-method-desc { font-size: 11.5px; color: var(--md-sys-color-on-surface-variant); margin-top: 2px; line-height: 1.5; }
+
+/* 参数配置网格 */
+.cs-param-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 12px; }
+.cs-param-field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.cs-param-field--wide { grid-column: 1 / -1; }
+.cs-param-label { font-size: 11.5px; color: var(--md-sys-color-on-surface-variant); }
+.cs-param-control { width: 100%; }
+.cs-param-input {
+  height: 32px; padding: 0 10px; border-radius: 7px; font-size: 12.5px;
+  border: 1px solid var(--md-sys-color-outline-variant); background: var(--md-sys-color-surface);
+  color: var(--md-sys-color-on-surface); font-family: var(--md-ref-typeface-plain);
+}
+.cs-param-input:focus { outline: none; border-color: var(--md-sys-color-primary); }
+.cs-param-chips { display: flex; flex-wrap: wrap; gap: 5px; }
+.cs-param-chip {
+  padding: 3px 10px; border-radius: 13px; font-size: 11.5px; cursor: pointer;
+  border: 1px solid var(--md-sys-color-outline-variant); background: var(--md-sys-color-surface);
+  color: var(--md-sys-color-on-surface-variant); font-family: var(--md-ref-typeface-plain);
+}
+.cs-param-chip:hover { border-color: var(--md-sys-color-primary); }
+.cs-param-chip--on { background: var(--md-sys-color-primary-container); color: var(--md-sys-color-primary); border-color: var(--md-sys-color-primary); font-weight: 600; }
+.cs-param-textarea {
+  width: 100%; padding: 7px 10px; border-radius: 7px; font-size: 12.5px; line-height: 1.5;
+  border: 1px solid var(--md-sys-color-outline-variant); background: var(--md-sys-color-surface);
+  color: var(--md-sys-color-on-surface); font-family: var(--md-ref-typeface-plain); resize: vertical;
+  box-sizing: border-box;
+}
+.cs-param-textarea:focus { outline: none; border-color: var(--md-sys-color-primary); }
+.cs-param-hint { font-size: 11px; color: var(--md-sys-color-on-surface-variant); }
+
+/* 候选可视化：条形列表（KNN / 随机森林）*/
+.cs-viz-list { display: flex; flex-direction: column; gap: 7px; }
+.cs-viz-bar-row { display: flex; align-items: center; gap: 8px; font-size: 11.5px; }
+.cs-viz-bar-name { width: 62px; flex-shrink: 0; color: var(--md-sys-color-on-surface); }
+.cs-viz-bar-track { flex: 1; height: 8px; border-radius: 4px; background: var(--md-sys-color-surface-container-highest); overflow: hidden; }
+.cs-viz-bar-fill { height: 100%; border-radius: 4px; background: #1565c0; }
+.cs-viz-bar-fill--rf { background: #2e7d32; }
+.cs-viz-bar-val { width: 84px; flex-shrink: 0; text-align: right; color: var(--md-sys-color-on-surface-variant); font-variant-numeric: tabular-nums; }
+
+/* 候选可视化：物理公式 */
+.cs-viz-formula { display: flex; flex-direction: column; gap: 8px; width: 100%; }
+.cs-viz-formula-eq {
+  text-align: center; font-size: 15px; padding: 8px; border-radius: 8px;
+  background: var(--md-sys-color-surface-container-low); color: var(--md-sys-color-on-surface);
+  font-family: ui-serif, 'Times New Roman', serif;
+}
+.cs-viz-formula-sub { display: flex; flex-direction: column; gap: 4px; }
+.cs-viz-formula-sub > div { display: flex; justify-content: space-between; font-size: 12px; color: var(--md-sys-color-on-surface-variant); }
+.cs-viz-formula-sub b { color: var(--md-sys-color-on-surface); font-variant-numeric: tabular-nums; }
+.cs-viz-formula-res { padding-top: 4px; border-top: 1px dashed var(--md-sys-color-outline-variant); }
+.cs-viz-formula-res span, .cs-viz-formula-res b { color: var(--md-sys-color-primary) !important; font-weight: 700; }
+
+/* 候选可视化：报告抽取 */
+.cs-viz-report { display: flex; flex-direction: column; gap: 6px; width: 100%; }
+.cs-viz-report-head { display: flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; color: var(--md-sys-color-on-surface); }
+.cs-viz-report-head md-icon { color: var(--md-sys-color-primary); }
+.cs-viz-report-snippet {
+  font-size: 12px; line-height: 1.6; color: var(--md-sys-color-on-surface-variant);
+  padding: 10px 12px; border-radius: 8px; border-left: 3px solid var(--md-sys-color-primary);
+  background: var(--md-sys-color-surface-container-low);
+}
+.cs-viz-report-snippet mark { background: color-mix(in srgb, var(--app-color-warning) 30%, transparent); color: var(--md-sys-color-on-surface); padding: 0 2px; border-radius: 3px; }
+.cs-viz-report-foot { font-size: 11px; color: var(--app-color-success); }
+/* 大模型抽取：模型标记 */
+.cs-viz-report-model {
+  margin-left: auto; padding: 1px 8px; border-radius: 10px; font-size: 10.5px; font-weight: 600;
+  background: var(--md-sys-color-primary-container); color: var(--md-sys-color-primary);
+}
+/* 大模型抽取：结构化字段 */
+.cs-viz-llm-fields {
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px 12px;
+  padding: 10px 12px; border-radius: 8px; background: var(--md-sys-color-surface-container-low);
+}
+.cs-viz-llm-fields > div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.cs-viz-llm-fields span { font-size: 10.5px; color: var(--md-sys-color-on-surface-variant); }
+.cs-viz-llm-fields b { font-size: 13px; color: var(--md-sys-color-on-surface); font-variant-numeric: tabular-nums; }
+.cs-viz-llm-fields b.cs-val { color: var(--md-sys-color-primary); font-weight: 700; }
+/* 大模型抽取：推理说明 */
+.cs-viz-llm-reason {
+  display: flex; gap: 6px; font-size: 11.5px; line-height: 1.55;
+  color: var(--md-sys-color-on-surface-variant);
+}
+.cs-viz-llm-reason md-icon { color: var(--md-sys-color-primary); flex-shrink: 0; margin-top: 1px; }
 
 /* ── 字段树面板中的井列表 ── */
 .ft-well-section {
@@ -5335,7 +5592,7 @@
 .viz-tool-btn:hover { background: var(--md-sys-color-surface-container-high); }
 .viz-tool-btn md-icon { font-size: 17px; }
 
-/* ── 图表区 ── */
+/* ���─ 图表区 ── */
 .viz-chart-area {
   flex: 1;
   overflow: hidden;
@@ -5913,7 +6170,7 @@
 }
 
 /* ================================================================
-   综合加权评分 — 三栏评分工作台
+   模板配置 — ��栏评分工作台
    ================================================================ */
 
 .sc-workbench {
@@ -6384,6 +6641,136 @@
   .sc-scheme-panel { width: 340px; }
   .sc-preview-panel { width: 440px; }
 }
+
+/* ================================================================
+   模板配置 — 质检模板模式增强
+   ================================================================ */
+
+/* A 区：配置对象分段控件 */
+.sc-obj-switch {
+  display: flex; gap: 4px; padding: 10px 12px 8px;
+  border-bottom: 1px solid var(--md-sys-color-outline-variant); flex-shrink: 0;
+}
+.sc-obj-btn {
+  flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 5px;
+  padding: 7px 10px; border-radius: 8px; border: 1px solid var(--md-sys-color-outline-variant);
+  background: var(--md-sys-color-surface); color: var(--md-sys-color-on-surface-variant);
+  font-size: 12.5px; font-family: var(--md-ref-typeface-plain); cursor: pointer; transition: all 0.12s;
+}
+.sc-obj-btn md-icon { font-size: 16px; }
+.sc-obj-btn:hover { background: var(--md-sys-color-surface-container-low); }
+.sc-obj-btn--active { background: var(--md-sys-color-primary-container); color: var(--md-sys-color-primary); border-color: var(--md-sys-color-primary); font-weight: 600; }
+
+/* A 区：模板列表项补充 */
+.sc-tpl-metrics { display: flex; flex-wrap: wrap; gap: 4px 10px; margin-top: 6px; }
+.sc-tpl-metric { display: inline-flex; align-items: center; gap: 3px; font-size: 11px; color: var(--md-sys-color-on-surface-variant); font-variant-numeric: tabular-nums; }
+.sc-tpl-metric md-icon { font-size: 13px; }
+.sc-tpl-scheme { display: inline-flex; align-items: center; gap: 4px; margin-top: 6px; font-size: 11px; color: var(--md-sys-color-primary); }
+.sc-tpl-scheme md-icon { font-size: 13px; }
+
+/* B 区：父模板引用 */
+.sc-parent-ref { display: inline-flex; align-items: center; gap: 3px; margin-left: 6px; color: var(--md-sys-color-on-surface-variant); }
+.sc-parent-ref md-icon { font-size: 14px; }
+
+/* B 区：匹配预览 */
+.sc-match-preview {
+  display: flex; align-items: flex-start; gap: 10px; padding: 12px 14px; border-radius: 10px;
+  background: var(--md-sys-color-surface-container-low); border: 1px solid var(--md-sys-color-outline-variant);
+}
+.sc-match-preview > md-icon { color: var(--md-sys-color-primary); font-size: 20px; flex-shrink: 0; }
+.sc-match-title { font-size: 12.5px; font-weight: 600; color: var(--md-sys-color-on-surface); }
+.sc-match-text { font-size: 12px; color: var(--md-sys-color-on-surface-variant); line-height: 1.5; margin-top: 2px; }
+.sc-match-flag { display: inline-flex; align-items: center; gap: 3px; font-size: 12px; font-weight: 600; white-space: nowrap; flex-shrink: 0; }
+.sc-match-flag md-icon { font-size: 15px; }
+.sc-match-flag--ok { color: #2e7d32; }
+
+/* B 区：覆盖统计 chips */
+.sc-stat-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.sc-stat-chip {
+  display: flex; flex-direction: column; gap: 1px; min-width: 84px; padding: 8px 12px; border-radius: 10px;
+  border: 1px solid var(--md-sys-color-outline-variant); background: var(--md-sys-color-surface-container-lowest);
+}
+.sc-stat-num { font-size: 19px; font-weight: 700; color: var(--md-sys-color-on-surface); font-variant-numeric: tabular-nums; line-height: 1.1; }
+.sc-stat-txt { font-size: 11px; color: var(--md-sys-color-on-surface-variant); }
+.sc-stat-chip--ok .sc-stat-num { color: #2e7d32; }
+.sc-stat-chip--warn .sc-stat-num { color: #6a1b9a; }
+.sc-stat-chip--danger { border-color: #ef9a9a; }
+.sc-stat-chip--danger .sc-stat-num { color: #c62828; }
+
+/* B 区：分类筛选 chips */
+.sc-cat-filter { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.sc-cat-chip {
+  padding: 4px 12px; border-radius: 14px; border: 1px solid var(--md-sys-color-outline-variant);
+  background: var(--md-sys-color-surface); color: var(--md-sys-color-on-surface-variant);
+  font-size: 12px; cursor: pointer; font-family: var(--md-ref-typeface-plain);
+}
+.sc-cat-chip:hover { border-color: var(--md-sys-color-primary); }
+.sc-cat-chip--active { background: var(--md-sys-color-primary-container); color: var(--md-sys-color-primary); border-color: var(--md-sys-color-primary); font-weight: 600; }
+
+/* B 区：字段规则矩阵 */
+.sc-matrix-wrap { overflow-x: auto; border: 1px solid var(--md-sys-color-outline-variant); border-radius: 10px; }
+.sc-matrix { min-width: 860px; }
+.sc-matrix th, .sc-matrix td { border-bottom: 1px solid var(--md-sys-color-outline-variant); }
+.sc-matrix td { vertical-align: top; }
+.sc-field-unit { font-size: 11px; color: var(--md-sys-color-on-surface-variant); font-weight: 400; }
+.sc-cell { display: inline-flex; flex-direction: column; gap: 2px; }
+.sc-cell-ver { font-size: 11.5px; color: var(--md-sys-color-on-surface); font-variant-numeric: tabular-nums; letter-spacing: 0.02em; }
+.sc-cell-empty { color: var(--md-sys-color-outline); }
+.sc-cell-tag { display: inline-block; width: fit-content; padding: 0 6px; border-radius: 4px; font-size: 10px; font-weight: 500; }
+.sc-cell-tag--inherit { background: var(--md-sys-color-surface-container-high); color: var(--md-sys-color-on-surface-variant); }
+.sc-cell-tag--override { background: #e3f2fd; color: #1565c0; }
+.sc-cell-tag--replace { background: #fff3e0; color: #e65100; }
+.sc-disp-tag { display: inline-block; padding: 2px 8px; border-radius: 4px; background: var(--md-sys-color-surface-container-high); color: var(--md-sys-color-on-surface); font-size: 11px; white-space: nowrap; }
+.sc-review-tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 500; white-space: nowrap; }
+.sc-review-tag--must { background: #ffebee; color: #c62828; }
+.sc-review-tag--sample { background: #fff3e0; color: #e65100; }
+.sc-review-tag--log { background: #e8f5e9; color: #2e7d32; }
+.sc-cov-badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.sc-cov-badge--full { background: color-mix(in srgb, #2e7d32 16%, transparent); color: #2e7d32; }
+.sc-cov-badge--gap { background: color-mix(in srgb, #e65100 18%, transparent); color: #e65100; }
+
+/* B 区：标定参数补充 */
+.sc-adopt-input { text-align: left; }
+.sc-changed-dot { color: #e65100; font-size: 10px; margin-left: 6px; vertical-align: middle; }
+.sc-basis { font-size: 11.5px; color: var(--md-sys-color-on-surface-variant); }
+
+/* B 区：工作量卡片 */
+.sc-workload-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.sc-wl-card {
+  display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border-radius: 10px;
+  background: var(--md-sys-color-surface-container-low); border: 1px solid var(--md-sys-color-outline-variant);
+}
+.sc-wl-num { font-size: 20px; font-weight: 700; color: var(--md-sys-color-on-surface); font-variant-numeric: tabular-nums; line-height: 1.1; }
+.sc-wl-txt { font-size: 11px; color: var(--md-sys-color-on-surface-variant); }
+.sc-wl-card--warn .sc-wl-num { color: #e65100; }
+
+/* B 区：绑定摘要 + 检查列表 */
+.sc-binding-summary { display: flex; flex-direction: column; gap: 8px; padding: 12px 14px; border-radius: 10px; background: var(--md-sys-color-surface-container-low); border: 1px solid var(--md-sys-color-outline-variant); }
+.sc-bind-item { display: flex; gap: 10px; font-size: 12.5px; }
+.sc-bind-label { width: 76px; flex-shrink: 0; color: var(--md-sys-color-on-surface-variant); }
+.sc-bind-value { color: var(--md-sys-color-on-surface); font-variant-numeric: tabular-nums; }
+.sc-bind-value--ok { display: inline-flex; align-items: center; gap: 4px; color: #2e7d32; font-weight: 600; }
+.sc-bind-value--ok md-icon { font-size: 15px; }
+.sc-check-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.sc-check-list li { display: flex; align-items: flex-start; gap: 6px; font-size: 12.5px; color: var(--md-sys-color-on-surface); line-height: 1.5; }
+.sc-check-list md-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+.sc-check-ok md-icon { color: #2e7d32; }
+.sc-check-warn md-icon { color: #1565c0; }
+
+/* C 区：预览页签 */
+.sc-ctabs { display: flex; gap: 2px; padding: 8px 12px 0; overflow-x: auto; border-bottom: 1px solid var(--md-sys-color-outline-variant); flex-shrink: 0; }
+.sc-ctab { padding: 7px 10px; border: none; background: transparent; border-bottom: 2px solid transparent; font-size: 12px; color: var(--md-sys-color-on-surface-variant); cursor: pointer; white-space: nowrap; font-family: var(--md-ref-typeface-plain); }
+.sc-ctab--active { color: var(--md-sys-color-primary); border-bottom-color: var(--md-sys-color-primary); font-weight: 600; }
+
+/* C 区：键值列表与分布 */
+.sc-kv-list { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
+.sc-kv { display: flex; justify-content: space-between; gap: 10px; font-size: 12px; }
+.sc-kv > span:first-child { color: var(--md-sys-color-on-surface-variant); }
+.sc-kv > span:last-child { color: var(--md-sys-color-on-surface); font-variant-numeric: tabular-nums; text-align: right; }
+.sc-dist-list { display: flex; flex-direction: column; gap: 6px; }
+.sc-dist-row { display: flex; justify-content: space-between; gap: 10px; padding: 6px 8px; border-radius: 6px; background: var(--md-sys-color-surface-container-low); font-size: 12px; }
+.sc-dist-name { color: var(--md-sys-color-on-surface-variant); }
+.sc-dist-val { color: var(--md-sys-color-on-surface); font-weight: 600; font-variant-numeric: tabular-nums; }
 
 /* ================================================================
    样本管理 — 新增样式（新建样本弹窗、样本抽取页、数据集筛选）

@@ -630,8 +630,8 @@ function ProductionChart({ fields }: { fields: VizField[] }) {
           <LineChart
             data={data}
             margin={{ top: 8, right: 24, left: 8, bottom: 8 }}
-            onMouseDown={(e: { activeTooltipIndex?: number }) => { if (e && e.activeTooltipIndex != null) setRefLeft(e.activeTooltipIndex) }}
-            onMouseMove={(e: { activeTooltipIndex?: number }) => { if (refLeft != null && e && e.activeTooltipIndex != null) setRefRight(e.activeTooltipIndex) }}
+            onMouseDown={(e) => { const i = e?.activeTooltipIndex; if (i != null) setRefLeft(Number(i)) }}
+            onMouseMove={(e) => { const i = e?.activeTooltipIndex; if (refLeft != null && i != null) setRefRight(Number(i)) }}
             onMouseUp={commitZoom}
           >
             <CartesianGrid strokeDasharray="3 3" stroke="var(--md-sys-color-outline-variant)" />
