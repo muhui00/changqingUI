@@ -80,11 +80,11 @@ const TOOLS: { name: Tool; desc: string; config: string; icon: string }[] = [
   { name: 'MICE', desc: '多字段联合缺失', config: '参与字段 · 迭代次数 · 随机种子', icon: 'account_tree' },
   { name: '随机森林', desc: '非线性多特征', config: '训练范围 · 特征 · 模型版本', icon: 'forest' },
   { name: '物理公式', desc: '明确工程关系', config: '公式 · 依赖字段 · 单位', icon: 'functions' },
-  { name: '报告抽取', desc: '文档中存在原始值', config: '报告 · 检索词 · 页码证据', icon: 'description' },
+  { name: '报告抽取', desc: '大模型阅读文档抽取原始值', config: '资料来源 · 抽取模型 · 抽取指令', icon: 'auto_awesome' },
 ]
 
 type ChartKind = 'spline' | 'linear' | 'knn' | 'mice' | 'rf' | 'formula' | 'report'
-interface ParamControl { key: string; label: string; type: 'select' | 'input' | 'chips'; options?: string[]; value: string; hint?: string }
+interface ParamControl { key: string; label: string; type: 'select' | 'input' | 'chips' | 'textarea'; options?: string[]; value: string; hint?: string }
 interface ToolDetail {
   method: string
   applicable: string
@@ -152,13 +152,14 @@ const TOOL_DETAILS: Record<Tool, ToolDetail> = {
     candidate: '15.4%', confidence: 90, confLevel: '高', evidence: 'φ=(ρma−ρb)/(ρma−ρf)', chart: 'formula',
   },
   '报告抽取': {
-    method: '文档检索 / OCR 抽取', applicable: '适用于原始值存在于录井、试井、完井报告',
+    method: '大模型智能抽取', applicable: '由大模型阅读录井、试井、完井等文档资料，理解上下文后抽取原始值并回溯出处',
     params: [
-      { key: 'report', label: '报告', type: 'select', options: ['录井报告', '试井报告', '完井报告'], value: '录井报告' },
-      { key: 'kw', label: '检索词', type: 'input', value: '孔隙度 平均' },
-      { key: 'page', label: '页码证据', type: 'input', value: 'P.12 表3' },
+      { key: 'source', label: '资料来源', type: 'chips', options: ['录井报告', '试井报告', '完井报告', '地质总结', '钻井日报'], value: '录井报告,完井报告' },
+      { key: 'model', label: '抽取模型', type: 'select', options: ['长庆·地质大模型 v2', '通用大模型 72B', '轻量抽取模型'], value: '长庆·地质大模型 v2' },
+      { key: 'prompt', label: '抽取指令', type: 'textarea', value: '抽取 2450–2478m 井段的平均孔隙度数值与量纲，并给出所在报告名称、页码与原文出处', hint: '大模型将据此理解目标并输出结构化结果与证据' },
+      { key: 'threshold', label: '证据置信阈值', type: 'select', options: ['≥ 0.80', '≥ 0.90', '≥ 0.95'], value: '≥ 0.90' },
     ],
-    candidate: '15.6% (录井)', confidence: 95, confLevel: '高', evidence: '录井报告 P.12 表3', chart: 'report',
+    candidate: '15.6% (录井)', confidence: 96, confLevel: '高', evidence: '录井报告 P.12 表3 · 大模型抽取', chart: 'report',
   },
 }
 
@@ -450,7 +451,7 @@ export function CompletenessWorkspace({ datasetName = '苏里格区块2024年综
                 </div>
                 <div className="cs-param-grid">
                   {detail.params.map(p => (
-                    <div key={p.key} className={`cs-param-field${p.type === 'chips' ? ' cs-param-field--wide' : ''}`}>
+                    <div key={p.key} className={`cs-param-field${p.type === 'chips' || p.type === 'textarea' ? ' cs-param-field--wide' : ''}`}>
                       <label className="cs-param-label">{p.label}</label>
                       {p.type === 'select' ? (
                         <select className="cs-filter-select cs-param-control" value={paramValues[p.key] ?? p.value}
@@ -459,6 +460,9 @@ export function CompletenessWorkspace({ datasetName = '苏里格区块2024年综
                         </select>
                       ) : p.type === 'input' ? (
                         <input className="cs-param-input cs-param-control" value={paramValues[p.key] ?? p.value}
+                          onChange={e => setParamValues(v => ({ ...v, [p.key]: e.target.value }))} />
+                      ) : p.type === 'textarea' ? (
+                        <textarea className="cs-param-textarea cs-param-control" rows={2} value={paramValues[p.key] ?? p.value}
                           onChange={e => setParamValues(v => ({ ...v, [p.key]: e.target.value }))} />
                       ) : (
                         <div className="cs-param-chips">
@@ -475,6 +479,7 @@ export function CompletenessWorkspace({ datasetName = '苏里格区块2024年综
                           })}
                         </div>
                       )}
+                      {p.hint && <span className="cs-param-hint">{p.hint}</span>}
                     </div>
                   ))}
                 </div>
@@ -615,19 +620,33 @@ function FormulaViz() {
   )
 }
 
-// 报告抽取：文档证据片段
+// 报告抽取：大模型智能抽取结果 + 结构化字段 + 原文证据 + 推理说明
 function ReportViz() {
   return (
     <div className="cs-viz-report">
       <div className="cs-viz-report-head">
-        <md-icon style={{ fontSize: 15 }}>description</md-icon>
-        录井报告 · 第 12 页 · 表 3
+        <md-icon style={{ fontSize: 15 }}>auto_awesome</md-icon>
+        大模型抽取结果
+        <span className="cs-viz-report-model">长庆·地质大模型 v2</span>
       </div>
+      {/* 结构化抽取结果 */}
+      <div className="cs-viz-llm-fields">
+        <div><span>目标字段</span><b>平均孔隙度</b></div>
+        <div><span>抽取值</span><b className="cs-val">15.6 %</b></div>
+        <div><span>井段</span><b>2450–2478m</b></div>
+        <div><span>证据出处</span><b>录井报告 P.12 表3</b></div>
+      </div>
+      {/* 原文证据片段 */}
       <div className="cs-viz-report-snippet">
         “……2450–2478m 井段 <mark>平均孔隙度 15.6%</mark>，有效厚度 21.3m，
         岩性以中砂岩为主，物性中等偏好……”
       </div>
-      <div className="cs-viz-report-foot">匹配度 96% · 已定位页码</div>
+      {/* 模型推理说明 */}
+      <div className="cs-viz-llm-reason">
+        <md-icon style={{ fontSize: 14 }}>psychology</md-icon>
+        <span>模型判断：“平均孔隙度”与目标字段语义一致，量纲为 %，且与邻井 15.1–15.8% 区间吻合，判定为高可信原始值。</span>
+      </div>
+      <div className="cs-viz-report-foot">证据置信 96% · 已定位页码 · 引用 1 处原文</div>
     </div>
   )
 }

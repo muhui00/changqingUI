@@ -1689,7 +1689,7 @@
   cursor: default;
 }
 
-/* 不在模板内的字段：禁�����不可配置 */
+/* 不在模板内的字段：禁�������不可配置 */
 .nd-field-row--locked {
   cursor: not-allowed;
 }
@@ -4662,6 +4662,14 @@
 }
 .cs-param-chip:hover { border-color: var(--md-sys-color-primary); }
 .cs-param-chip--on { background: var(--md-sys-color-primary-container); color: var(--md-sys-color-primary); border-color: var(--md-sys-color-primary); font-weight: 600; }
+.cs-param-textarea {
+  width: 100%; padding: 7px 10px; border-radius: 7px; font-size: 12.5px; line-height: 1.5;
+  border: 1px solid var(--md-sys-color-outline-variant); background: var(--md-sys-color-surface);
+  color: var(--md-sys-color-on-surface); font-family: var(--md-ref-typeface-plain); resize: vertical;
+  box-sizing: border-box;
+}
+.cs-param-textarea:focus { outline: none; border-color: var(--md-sys-color-primary); }
+.cs-param-hint { font-size: 11px; color: var(--md-sys-color-on-surface-variant); }
 
 /* 候选可视化：条形列表（KNN / 随机森林）*/
 .cs-viz-list { display: flex; flex-direction: column; gap: 7px; }
@@ -4696,6 +4704,26 @@
 }
 .cs-viz-report-snippet mark { background: color-mix(in srgb, var(--app-color-warning) 30%, transparent); color: var(--md-sys-color-on-surface); padding: 0 2px; border-radius: 3px; }
 .cs-viz-report-foot { font-size: 11px; color: var(--app-color-success); }
+/* 大模型抽取：模型标记 */
+.cs-viz-report-model {
+  margin-left: auto; padding: 1px 8px; border-radius: 10px; font-size: 10.5px; font-weight: 600;
+  background: var(--md-sys-color-primary-container); color: var(--md-sys-color-primary);
+}
+/* 大模型抽取：结构化字段 */
+.cs-viz-llm-fields {
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px 12px;
+  padding: 10px 12px; border-radius: 8px; background: var(--md-sys-color-surface-container-low);
+}
+.cs-viz-llm-fields > div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.cs-viz-llm-fields span { font-size: 10.5px; color: var(--md-sys-color-on-surface-variant); }
+.cs-viz-llm-fields b { font-size: 13px; color: var(--md-sys-color-on-surface); font-variant-numeric: tabular-nums; }
+.cs-viz-llm-fields b.cs-val { color: var(--md-sys-color-primary); font-weight: 700; }
+/* 大模型抽取：推理说明 */
+.cs-viz-llm-reason {
+  display: flex; gap: 6px; font-size: 11.5px; line-height: 1.55;
+  color: var(--md-sys-color-on-surface-variant);
+}
+.cs-viz-llm-reason md-icon { color: var(--md-sys-color-primary); flex-shrink: 0; margin-top: 1px; }
 
 /* ── 字段树面板中的井列表 ── */
 .ft-well-section {
