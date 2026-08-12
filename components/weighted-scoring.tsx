@@ -285,7 +285,7 @@ export function WeightedScoring() {
       <button role="tab" aria-selected={objectMode === 'template'}
         className={`sc-obj-btn${objectMode === 'template' ? ' sc-obj-btn--active' : ''}`}
         onClick={() => setObjectMode('template')}>
-        <md-icon>rule_folder</md-icon>质控模板
+        <md-icon>rule_folder</md-icon>质检模板
       </button>
       <button role="tab" aria-selected={objectMode === 'scheme'}
         className={`sc-obj-btn${objectMode === 'scheme' ? ' sc-obj-btn--active' : ''}`}
@@ -301,17 +301,17 @@ export function WeightedScoring() {
       <div className="sc-page-header">
         <div className="lib-breadcrumb md-typescale-label-medium">
           <md-icon>tune</md-icon>质检配置<md-icon class="lib-bc-sep">chevron_right</md-icon>
-          <span className="lib-bc-current">综合加权评分</span>
+          <span className="lib-bc-current">模板配置</span>
         </div>
         <div className="sc-header-row">
           <div>
-            <h1 className="md-typescale-headline-small sc-page-title">综合加权评分</h1>
-            <p className="md-typescale-body-medium sc-page-subtitle">按区块配置质控模板，统一四维质量权重、评分等级与业务门槛，并通过历史数据进行联合标定与试算</p>
+            <h1 className="md-typescale-headline-small sc-page-title">模板配置</h1>
+            <p className="md-typescale-body-medium sc-page-subtitle">按区块配置质检模板，统一四维质量权重、评分等级与业务门槛，并通过历史数据进行联合标定与试算</p>
           </div>
           <div className="sc-header-actions">
             {objectMode === 'template' ? (
               <>
-                <button className="lib-btn lib-btn--ghost"><md-icon>add</md-icon>新建质控模板</button>
+                <button className="lib-btn lib-btn--ghost"><md-icon>add</md-icon>新建质检模板</button>
                 <button className="lib-btn lib-btn--ghost"><md-icon>content_copy</md-icon>复制模板</button>
                 <button className="lib-btn lib-btn--ghost"><md-icon>history</md-icon>查看版本</button>
                 <button className="lib-btn lib-btn--ghost"><md-icon>save</md-icon>保存草稿</button>

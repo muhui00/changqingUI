@@ -110,7 +110,7 @@ export function TopNav({ currentDataset, activePage = 'overview', onNavOverview,
             </md-menu-item>
             <md-menu-item onClick={() => { setConfigMenuOpen(false); onNavWeightedScoring?.() }}>
               <md-icon slot="start">assessment</md-icon>
-              <div slot="headline">综合加权评分</div>
+              <div slot="headline">模板配置</div>
             </md-menu-item>
           </md-menu>
         </div>

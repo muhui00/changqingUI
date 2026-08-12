@@ -126,7 +126,7 @@ export function HomeClient() {
     )
   }
 
-  // ── 综合加权评分 ──
+  // ── 模板配置 ──
   if (page === 'weighted-scoring') {
     return (
       <div className="app-shell">

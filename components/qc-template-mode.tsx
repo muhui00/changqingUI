@@ -68,14 +68,14 @@ const TPL_STATUS_CLASS: Record<TemplateStatus, string> = {
 
 const TEMPLATES: Template[] = [
   {
-    id: 't1', name: '区块A水平井压裂质控模板', code: 'TPL_BLOCK_A_HZ', version: 'V1.2', status: '已启用',
+    id: 't1', name: '区块A水平井压裂质检模板', code: 'TPL_BLOCK_A_HZ', version: 'V1.2', status: '已启用',
     type: '区块级', field: '长庆油田', block: '苏里格区块A', seam: '盒8+山1', wellType: '水平井', stage: '压前+压中',
     parent: '致密气油田级基线 V2.0', ruleCoverage: '58/58', paramOverride: 18, sampleWells: 126, calibratedAt: '2026-07-26',
     scheme: '致密气综合质检评分 V2.1', trialScore: 92.8, trialGrade: '合格', reviewWells: 34, priority: 90,
     owner: '王玉慧', updatedAt: '2026-07-28 22:15',
   },
   {
-    id: 't2', name: '区块B直井压后质控模板', code: 'TPL_BLOCK_B_VT', version: 'V1.0', status: '已启用',
+    id: 't2', name: '区块B直井压后质检模板', code: 'TPL_BLOCK_B_VT', version: 'V1.0', status: '已启用',
     type: '区块级', field: '长庆油田', block: '苏里格区块B', seam: '盒8', wellType: '直井', stage: '压后',
     parent: '致密气油田级基线 V2.0', ruleCoverage: '54/58', paramOverride: 11, sampleWells: 88, calibratedAt: '2026-07-18',
     scheme: '致密气综合质检评分 V2.1', trialScore: 88.4, trialGrade: '良好', reviewWells: 22, priority: 80,
@@ -192,8 +192,8 @@ export function QCTemplateMode({ modeSwitch }: { modeSwitch: ReactNode }) {
 
   return (
     <>
-      {/* ── A 区：质控模板列表 ── */}
-      <aside className="sc-scheme-panel" aria-label="质控模板区">
+      {/* ── A 区：质检模板列表 ── */}
+      <aside className="sc-scheme-panel" aria-label="质检模板区">
         {modeSwitch}
         <div className="sc-scheme-filters">
           <div className="lib-search-wrap sc-search">
@@ -347,7 +347,7 @@ export function QCTemplateMode({ modeSwitch }: { modeSwitch: ReactNode }) {
                     <tr>
                       <th>字段（只读引用）</th>
                       <th>完整性</th><th>一致性</th><th>分布范围</th><th>相关性</th>
-                      <th>默认处置</th><th>专家复核</th><th className="sc-th-num">覆盖</th>
+                      <th>默认处置</th><th>��家复核</th><th className="sc-th-num">覆盖</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -372,7 +372,7 @@ export function QCTemplateMode({ modeSwitch }: { modeSwitch: ReactNode }) {
                   </tbody>
                 </table>
               </div>
-              <p className="sc-note"><md-icon>info</md-icon>矩阵仅引用字段与规则版本：「继承」沿用父模板锁定版本，「区块覆盖」保持同一规则版本仅改可覆盖参数，「替换」需说明原因并重新试运行。字段定义与规则算法请在字段标准库 / 质控规则库维护。</p>
+              <p className="sc-note"><md-icon>info</md-icon>矩阵仅引用字段与规则版本：「继承」沿用父模板锁定版本，「区块覆盖」保持同一规则版本仅改可覆盖参数，「替换」需说明原因并重新试运行。字段定义与规则算法请在字段标准库 / 质检规则库维护。</p>
             </div>
           )}
 
@@ -382,7 +382,7 @@ export function QCTemplateMode({ modeSwitch }: { modeSwitch: ReactNode }) {
               <div className="sc-section-title"><span className="sc-bar sc-bar--primary" />标定数据选择</div>
               <div className="sc-form-grid">
                 <div className="sc-field"><label className="sc-label">数据集版本</label>
-                  <select className="sc-select"><option>区块A已审核集 2023-2026</option><option>区块A质控完成集 v3.2</option></select></div>
+                  <select className="sc-select"><option>区块A已审核集 2023-2026</option><option>区块A质检完成集 v3.2</option></select></div>
                 <div className="sc-field"><label className="sc-label">时间范围</label>
                   <input className="sc-input" defaultValue="最近 3 年" /></div>
                 <div className="sc-field"><label className="sc-label">最小样本量</label>
@@ -481,7 +481,7 @@ export function QCTemplateMode({ modeSwitch }: { modeSwitch: ReactNode }) {
               <div className="sc-section-title"><span className="sc-bar sc-bar--success" />绑定兼容性检查</div>
               <ul className="sc-check-list">
                 <li className="sc-check-ok"><md-icon>check_circle</md-icon>模板包含评分方案要求的四个维度与必需规则</li>
-                <li className="sc-check-ok"><md-icon>check_circle</md-icon>评分方案维度内规则模式为「跟随质控模板」</li>
+                <li className="sc-check-ok"><md-icon>check_circle</md-icon>评分方案维度内规则模式为「跟随质检模板」</li>
                 <li className="sc-check-ok"><md-icon>check_circle</md-icon>模板规则可提供方案要求的规则得分来源</li>
                 <li className="sc-check-ok"><md-icon>check_circle</md-icon>复核策略满足「严重/阻断 100% 复核」评分门槛</li>
                 <li className="sc-check-warn"><md-icon>info</md-icon>模板区块范围与评分方案适用范围相容（陆地 / 致密气）</li>
