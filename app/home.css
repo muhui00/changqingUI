@@ -1433,11 +1433,84 @@
   color: var(--md-sys-color-error);
 }
 
+/* 质检模板选择器 */
+.nd-tpl-select {
+  width: 100%;
+  border: 1px solid var(--md-sys-color-outline);
+  border-radius: 8px;
+  padding: 8px 12px;
+  background: var(--md-sys-color-surface-container);
+  color: var(--md-sys-color-on-surface);
+  font-family: var(--md-ref-typeface-plain);
+  outline: none;
+  transition: border-color 0.15s;
+  box-sizing: border-box;
+  cursor: pointer;
+}
+.nd-tpl-select:focus {
+  border-color: var(--md-sys-color-primary);
+  background: var(--md-sys-color-surface);
+}
+.nd-tpl-hint {
+  color: var(--md-sys-color-on-surface-variant);
+}
+.nd-tpl-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 2px;
+}
+.nd-tpl-chip {
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-size: 11.5px;
+  background: var(--md-sys-color-primary-container);
+  color: var(--md-sys-color-primary);
+  border: 1px solid color-mix(in srgb, var(--md-sys-color-primary) 30%, transparent);
+}
+
 /* 穿梭框 */
 .nd-shuttle {
+  position: relative;
   display: flex;
   gap: 10px;
   height: 380px;
+}
+
+/* 未选模板时的锁定态 */
+.nd-shuttle--locked > .nd-shuttle-pane,
+.nd-shuttle--locked > .nd-shuttle-btns {
+  opacity: 0.45;
+  filter: grayscale(0.4);
+  pointer-events: none;
+  user-select: none;
+}
+.nd-shuttle-gate {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  text-align: center;
+  padding: 24px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--md-sys-color-surface) 72%, transparent);
+  backdrop-filter: blur(1.5px);
+}
+.nd-shuttle-gate-icon {
+  --md-icon-size: 40px;
+  color: var(--md-sys-color-primary);
+}
+.nd-shuttle-gate-title {
+  color: var(--md-sys-color-on-surface);
+  font-weight: 600;
+}
+.nd-shuttle-gate-desc {
+  color: var(--md-sys-color-on-surface-variant);
+  max-width: 320px;
 }
 
 .nd-shuttle-pane {
@@ -1616,6 +1689,21 @@
   cursor: default;
 }
 
+/* 不在模板内的字段：禁用不可配置 */
+.nd-field-row--locked {
+  cursor: not-allowed;
+}
+.nd-field-row--locked:hover {
+  background: transparent;
+}
+.nd-field-row--locked .nd-field-name {
+  color: var(--md-sys-color-on-surface-variant);
+  opacity: 0.6;
+}
+.nd-field-row--locked .nd-cbox {
+  cursor: not-allowed;
+}
+
 .nd-field-name {
   flex: 1;
   color: var(--md-sys-color-on-surface);
@@ -1624,6 +1712,11 @@
 .nd-field-done-icon {
   font-size: 14px;
   color: var(--app-color-success);
+}
+
+.nd-field-lock-icon {
+  font-size: 13px;
+  color: var(--md-sys-color-outline);
 }
 
 .nd-cbox {
