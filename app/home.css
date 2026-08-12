@@ -4466,7 +4466,83 @@
 .cs-comp-chart {
   border: 1px solid var(--md-sys-color-outline-variant);
   border-radius: 8px; padding: 8px; background: var(--md-sys-color-surface);
+  min-height: 132px; display: flex; align-items: center;
 }
+.cs-comp-chart > * { width: 100%; }
+
+/* 工具选项：图标 + 推荐标记 */
+.cs-tool-opt { display: block; text-align: left; background: var(--md-sys-color-surface); font-family: var(--md-ref-typeface-plain); }
+.cs-tool-opt-head { display: flex; align-items: center; gap: 6px; }
+.cs-tool-opt-icon { font-size: 17px !important; color: var(--md-sys-color-on-surface-variant); }
+.cs-tool-opt--active .cs-tool-opt-icon { color: var(--md-sys-color-primary); }
+.cs-tool-opt-rec {
+  margin-left: auto; padding: 1px 7px; border-radius: 9px; font-size: 10.5px; font-weight: 600;
+  background: color-mix(in srgb, var(--app-color-success) 16%, transparent); color: var(--app-color-success);
+}
+
+/* 工具方法说明卡 */
+.cs-tool-method {
+  display: flex; gap: 8px; align-items: flex-start; padding: 10px 12px; border-radius: 8px;
+  background: var(--md-sys-color-surface-container-low); border: 1px solid var(--md-sys-color-outline-variant);
+}
+.cs-tool-method > md-icon { color: var(--md-sys-color-primary); flex-shrink: 0; margin-top: 1px; }
+.cs-tool-method-name { font-size: 12.5px; font-weight: 600; color: var(--md-sys-color-on-surface); }
+.cs-tool-method-desc { font-size: 11.5px; color: var(--md-sys-color-on-surface-variant); margin-top: 2px; line-height: 1.5; }
+
+/* 参数配置网格 */
+.cs-param-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 12px; }
+.cs-param-field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.cs-param-field--wide { grid-column: 1 / -1; }
+.cs-param-label { font-size: 11.5px; color: var(--md-sys-color-on-surface-variant); }
+.cs-param-control { width: 100%; }
+.cs-param-input {
+  height: 32px; padding: 0 10px; border-radius: 7px; font-size: 12.5px;
+  border: 1px solid var(--md-sys-color-outline-variant); background: var(--md-sys-color-surface);
+  color: var(--md-sys-color-on-surface); font-family: var(--md-ref-typeface-plain);
+}
+.cs-param-input:focus { outline: none; border-color: var(--md-sys-color-primary); }
+.cs-param-chips { display: flex; flex-wrap: wrap; gap: 5px; }
+.cs-param-chip {
+  padding: 3px 10px; border-radius: 13px; font-size: 11.5px; cursor: pointer;
+  border: 1px solid var(--md-sys-color-outline-variant); background: var(--md-sys-color-surface);
+  color: var(--md-sys-color-on-surface-variant); font-family: var(--md-ref-typeface-plain);
+}
+.cs-param-chip:hover { border-color: var(--md-sys-color-primary); }
+.cs-param-chip--on { background: var(--md-sys-color-primary-container); color: var(--md-sys-color-primary); border-color: var(--md-sys-color-primary); font-weight: 600; }
+
+/* 候选可视化：条形列表（KNN / 随机森林）*/
+.cs-viz-list { display: flex; flex-direction: column; gap: 7px; }
+.cs-viz-bar-row { display: flex; align-items: center; gap: 8px; font-size: 11.5px; }
+.cs-viz-bar-name { width: 62px; flex-shrink: 0; color: var(--md-sys-color-on-surface); }
+.cs-viz-bar-track { flex: 1; height: 8px; border-radius: 4px; background: var(--md-sys-color-surface-container-highest); overflow: hidden; }
+.cs-viz-bar-fill { height: 100%; border-radius: 4px; background: #1565c0; }
+.cs-viz-bar-fill--rf { background: #2e7d32; }
+.cs-viz-bar-val { width: 84px; flex-shrink: 0; text-align: right; color: var(--md-sys-color-on-surface-variant); font-variant-numeric: tabular-nums; }
+
+/* 候选可视化：物理公式 */
+.cs-viz-formula { display: flex; flex-direction: column; gap: 8px; width: 100%; }
+.cs-viz-formula-eq {
+  text-align: center; font-size: 15px; padding: 8px; border-radius: 8px;
+  background: var(--md-sys-color-surface-container-low); color: var(--md-sys-color-on-surface);
+  font-family: ui-serif, 'Times New Roman', serif;
+}
+.cs-viz-formula-sub { display: flex; flex-direction: column; gap: 4px; }
+.cs-viz-formula-sub > div { display: flex; justify-content: space-between; font-size: 12px; color: var(--md-sys-color-on-surface-variant); }
+.cs-viz-formula-sub b { color: var(--md-sys-color-on-surface); font-variant-numeric: tabular-nums; }
+.cs-viz-formula-res { padding-top: 4px; border-top: 1px dashed var(--md-sys-color-outline-variant); }
+.cs-viz-formula-res span, .cs-viz-formula-res b { color: var(--md-sys-color-primary) !important; font-weight: 700; }
+
+/* 候选可视化：报告抽取 */
+.cs-viz-report { display: flex; flex-direction: column; gap: 6px; width: 100%; }
+.cs-viz-report-head { display: flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; color: var(--md-sys-color-on-surface); }
+.cs-viz-report-head md-icon { color: var(--md-sys-color-primary); }
+.cs-viz-report-snippet {
+  font-size: 12px; line-height: 1.6; color: var(--md-sys-color-on-surface-variant);
+  padding: 10px 12px; border-radius: 8px; border-left: 3px solid var(--md-sys-color-primary);
+  background: var(--md-sys-color-surface-container-low);
+}
+.cs-viz-report-snippet mark { background: color-mix(in srgb, var(--app-color-warning) 30%, transparent); color: var(--md-sys-color-on-surface); padding: 0 2px; border-radius: 3px; }
+.cs-viz-report-foot { font-size: 11px; color: var(--app-color-success); }
 
 /* ── 字段树面板中的井列表 ── */
 .ft-well-section {
