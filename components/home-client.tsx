@@ -17,8 +17,9 @@ import { VisualizationPage } from './visualization-page'
 import { FieldStandardLibrary } from './field-standard-library'
 import { QCRuleLibrary } from './qc-rule-library'
 import { WeightedScoring } from './weighted-scoring'
+import { NewDatasetWorkbench, type NdCreatedInfo, type NdDraft } from './new-dataset/new-dataset-workbench'
 
-type AppPage = 'overview' | 'report-center' | 'report-preview' | 'qc-workspace' | 'sample-management' | 'visualization' | 'field-standard' | 'qc-rule' | 'weighted-scoring'
+type AppPage = 'overview' | 'report-center' | 'report-preview' | 'qc-workspace' | 'sample-management' | 'visualization' | 'field-standard' | 'qc-rule' | 'weighted-scoring' | 'new-dataset'
 
 export function HomeClient() {
   const [datasets, setDatasets] = useState<Dataset[]>(MOCK_DATASETS)
@@ -36,6 +37,23 @@ export function HomeClient() {
   const [previewReportId, setPreviewReportId] = useState<string>('')
   const [createReportOpen, setCreateReportOpen] = useState(false)
   const [activeWorkspace, setActiveWorkspace] = useState<QCWorkspaceType>('consistency')
+  // 新建数据集草稿：返回总览后保留未完成配置，再次进入可恢复
+  const [ndDraft, setNdDraft] = useState<NdDraft | null>(null)
+
+  const handleOpenNewDataset = () => setPage('new-dataset')
+
+  // 构建完成：数据集进入“待质检”，由用户在总览点击开始质检
+  const handleDatasetCreated = (info: NdCreatedInfo) => {
+    const id = `ds-${Date.now()}`
+    setDatasets(prev => [{
+      id,
+      name: info.name,
+      version: 'v1.0',
+      status: '待质检',
+      updatedAt: new Date().toISOString().slice(0, 10),
+    }, ...prev])
+    setSelectedDatasetId(id)
+  }
 
   // 质检流程完成：标记该数据集已质检，状态置为待复核
   const handleQCComplete = (id: string) => {
@@ -75,6 +93,26 @@ export function HomeClient() {
   const handleSwitchWorkspaceTab = (tab: QCWorkspaceType) => {
     setActiveWorkspace(tab)
     setActiveStep(tab as QCCardType)
+  }
+
+  // ── 新建数据集（全屏分步工作台）──
+  if (page === 'new-dataset') {
+    return (
+      <div className="app-shell">
+        <TopNav activePage="overview"
+          onNavOverview={handleNavToOverview} onNavReportCenter={handleNavToReportCenter}
+          onNavSampleManagement={handleNavToSampleManagement} onNavVisualization={handleNavToVisualization}
+          onNavFieldStandard={handleNavToFieldStandard} onNavQCRule={handleNavToQCRule}
+          onNavWeightedScoring={handleNavToWeightedScoring} />
+        <NewDatasetWorkbench
+          existingNames={datasets.map(d => d.name)}
+          initialDraft={ndDraft}
+          onDraftChange={setNdDraft}
+          onBack={handleNavToOverview}
+          onCreated={handleDatasetCreated}
+        />
+      </div>
+    )
   }
 
   // ── 数据可视化 ──
@@ -126,7 +164,7 @@ export function HomeClient() {
     )
   }
 
-  // ── 综合加权评分 ──
+  // ── 模板配置 ──
   if (page === 'weighted-scoring') {
     return (
       <div className="app-shell">
@@ -201,7 +239,8 @@ export function HomeClient() {
           <DatasetList datasets={datasets} onDatasetsChange={setDatasets}
             selectedId={selectedDatasetId} onSelect={setSelectedDatasetId}
             collapsed={datasetCollapsed} onToggleCollapse={() => setDatasetCollapsed(v => !v)}
-            onViewReport={(id) => { setPreviewReportId(id); setPage('report-preview') }} />
+            onViewReport={(id) => { setPreviewReportId(id); setPage('report-preview') }}
+            onCreateDataset={handleOpenNewDataset} />
           <FieldTree collapsed={fieldCollapsed} onToggleCollapse={() => setFieldCollapsed(v => !v)} />
           <main className="content-area" id="main-content">
             {activeWorkspace === 'consistency' && (
@@ -247,7 +286,8 @@ export function HomeClient() {
         <DatasetList datasets={datasets} onDatasetsChange={setDatasets}
           selectedId={selectedDatasetId} onSelect={setSelectedDatasetId}
           collapsed={datasetCollapsed} onToggleCollapse={() => setDatasetCollapsed(v => !v)}
-          onViewReport={(id) => { setPreviewReportId(id); setPage('report-preview') }} />
+          onViewReport={(id) => { setPreviewReportId(id); setPage('report-preview') }}
+          onCreateDataset={handleOpenNewDataset} />
         <FieldTree collapsed={fieldCollapsed} onToggleCollapse={() => setFieldCollapsed(v => !v)} />
         <main className="content-area" id="main-content">
           <QCOverview onCardClick={handleCardClick} hoveredCard={hoveredCard}

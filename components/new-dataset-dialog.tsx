@@ -96,8 +96,40 @@ const CANDIDATE_TREE: { id: string; name: string; blocks: BlockDef[] }[] = [
   },
 ]
 
+// ─── 质检模板：决定可配置的质检字段范围 ─────────────────────────────
+// 模板中配置的字段（按字段名）即“可质检字段”，选取模板后仅这些字段可勾选，
+// 其余字段在候选树中禁用；选定模板时系统默认勾选这些字段。
+
+interface QCTemplate {
+  id: string
+  name: string
+  code: string
+  fields: string[] // 模板配置的质检字段名
+}
+
+const QC_TEMPLATES: QCTemplate[] = [
+  { id: 't1', name: '区块A水平井压裂质检模板', code: 'TPL_BLOCK_A_HZ', fields: ['井号', '井型', '孔隙度', '渗透率', '加砂量', '单井入地液量', '日产气量'] },
+  { id: 't2', name: '区块B直井压后质检模板', code: 'TPL_BLOCK_B_VT', fields: ['井号', '孔隙度', '渗透率', '加砂量', '日产气量', '累产气量'] },
+  { id: 't3', name: '通用地质参数质检模板', code: 'TPL_GEO_BASE', fields: ['井号', '孔隙度', '渗透率', '油层厚度'] },
+]
+
 // 所有叶子字段的 key = `${wellId}::${fieldId}`
 type SelectedKey = string // `wellId::fieldId`
+
+// 收集树中字段名在 allowed 集合内的全部叶子 key
+function collectAllowedKeys(allowed: Set<string>): Set<SelectedKey> {
+  const keys = new Set<SelectedKey>()
+  for (const oilfield of CANDIDATE_TREE) {
+    for (const block of oilfield.blocks) {
+      for (const well of block.wells) {
+        for (const field of well.fields) {
+          if (allowed.has(field.name)) keys.add(`${well.id}::${field.id}`)
+        }
+      }
+    }
+  }
+  return keys
+}
 
 interface SelectedItem {
   wellId: string
@@ -148,16 +180,19 @@ function makeSelectedItems(keys: Set<SelectedKey>, tree: typeof CANDIDATE_TREE):
 
 type CheckState = 'unchecked' | 'indeterminate' | 'checked'
 
-function getWellCheckState(wellId: string, well: WellDef, selected: Set<SelectedKey>): CheckState {
-  const total = well.fields.length
-  const checked = well.fields.filter((f) => selected.has(`${wellId}::${f.id}`)).length
+// 仅统计模板允许的字段
+function getWellCheckState(wellId: string, well: WellDef, selected: Set<SelectedKey>, allowed: Set<string>): CheckState {
+  const allowedFields = well.fields.filter((f) => allowed.has(f.name))
+  const total = allowedFields.length
+  if (total === 0) return 'unchecked'
+  const checked = allowedFields.filter((f) => selected.has(`${wellId}::${f.id}`)).length
   if (checked === 0) return 'unchecked'
   if (checked === total) return 'checked'
   return 'indeterminate'
 }
 
-function getBlockCheckState(block: BlockDef, selected: Set<SelectedKey>): CheckState {
-  const states = block.wells.map((w) => getWellCheckState(w.id, w, selected))
+function getBlockCheckState(block: BlockDef, selected: Set<SelectedKey>, allowed: Set<string>): CheckState {
+  const states = block.wells.map((w) => getWellCheckState(w.id, w, selected, allowed))
   if (states.every((s) => s === 'checked')) return 'checked'
   if (states.every((s) => s === 'unchecked')) return 'unchecked'
   return 'indeterminate'
@@ -176,9 +211,15 @@ const CATEGORIES: FieldCategory[] = ['基本信息', '地质参数', '工程参�
 export function NewDatasetDialog({ open, onClose, onConfirm }: NewDatasetDialogProps) {
   const [name, setName] = useState('')
   const [nameError, setNameError] = useState('')
+  const [templateId, setTemplateId] = useState('')
   const [candSearch, setCandSearch] = useState('')
   const [selSearch, setSelSearch] = useState('')
   const [selected, setSelected] = useState<Set<SelectedKey>>(new Set())
+
+  // 当前所选质检模板及其允许的质检字段名集合
+  const selectedTemplate = QC_TEMPLATES.find((t) => t.id === templateId) ?? null
+  const templateChosen = !!selectedTemplate
+  const allowedNames = new Set(selectedTemplate?.fields ?? [])
 
   // 候选树展开状态
   const [expandedOilfields, setExpandedOilfields] = useState<Set<string>>(new Set(['cq']))
@@ -219,6 +260,7 @@ export function NewDatasetDialog({ open, onClose, onConfirm }: NewDatasetDialogP
         for (const well of block.wells) {
           const wellMatch = !filterText || well.name.toLowerCase().includes(filterText)
           for (const field of well.fields) {
+            if (!allowedNames.has(field.name)) continue // 仅模板允许字段
             const fieldMatch = !filterText || field.name.toLowerCase().includes(filterText)
             if (wellMatch || fieldMatch) {
               toAdd.add(`${well.id}::${field.id}`)
@@ -232,7 +274,7 @@ export function NewDatasetDialog({ open, onClose, onConfirm }: NewDatasetDialogP
       for (const k of toAdd) next.add(k)
       return next
     })
-  }, [filterText])
+  }, [filterText, templateId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // 移除勾选项
   const removeChecked = useCallback(() => {
@@ -251,8 +293,26 @@ export function NewDatasetDialog({ open, onClose, onConfirm }: NewDatasetDialogP
     setSelChecked(new Set())
   }, [])
 
-  // 候选树字段勾选
-  const toggleCandField = (wellId: string, fieldId: string) => {
+  // 切换质检模板：默认勾选模板中配置的质检字段，并清理不在模板内的已选项
+  const changeTemplate = (id: string) => {
+    setTemplateId(id)
+    const tpl = QC_TEMPLATES.find((t) => t.id === id)
+    const allowed = new Set(tpl?.fields ?? [])
+    const allowedKeys = collectAllowedKeys(allowed)
+    // 默认勾选模板字段（待添加）
+    setCandChecked(new Set(allowedKeys))
+    // 已选项仅保留模板允许的字段
+    setSelected((prev) => {
+      const next = new Set<SelectedKey>()
+      for (const k of prev) if (allowedKeys.has(k)) next.add(k)
+      return next
+    })
+    setSelChecked(new Set())
+  }
+
+  // 候选树字段勾选（仅模板允许字段可勾选）
+  const toggleCandField = (wellId: string, fieldId: string, allowed: boolean) => {
+    if (!allowed) return
     const key = `${wellId}::${fieldId}`
     setCandChecked((prev) => {
       const next = new Set(prev)
@@ -262,9 +322,10 @@ export function NewDatasetDialog({ open, onClose, onConfirm }: NewDatasetDialogP
     })
   }
 
-  // 候选树井级全选/取消
+  // 候选树井级全选/取消（仅作用于模板允许字段）
   const toggleCandWell = (well: WellDef) => {
-    const keys = well.fields.map((f) => `${well.id}::${f.id}`)
+    const keys = well.fields.filter((f) => allowedNames.has(f.name)).map((f) => `${well.id}::${f.id}`)
+    if (keys.length === 0) return
     const allChecked = keys.every((k) => candChecked.has(k))
     setCandChecked((prev) => {
       const next = new Set(prev)
@@ -284,6 +345,7 @@ export function NewDatasetDialog({ open, onClose, onConfirm }: NewDatasetDialogP
       setNameError('数据集名称不超过 50 个字符')
       return
     }
+    if (!templateChosen) return
     if (selected.size === 0) return
     onConfirm?.(trimmed, selectedItems)
     handleClose()
@@ -292,6 +354,7 @@ export function NewDatasetDialog({ open, onClose, onConfirm }: NewDatasetDialogP
   const handleClose = () => {
     setName('')
     setNameError('')
+    setTemplateId('')
     setCandSearch('')
     setSelSearch('')
     setSelected(new Set())
@@ -353,12 +416,52 @@ export function NewDatasetDialog({ open, onClose, onConfirm }: NewDatasetDialogP
                 )}
               </div>
             </div>
+
+            {/* 质检模板：数据选取前置条件 */}
+            <div className="nd-name-row">
+              <label htmlFor="nd-template" className="md-typescale-label-medium nd-label">
+                质检模板<span className="nd-required">*</span>
+              </label>
+              <div className="nd-name-input-wrap">
+                <select
+                  id="nd-template"
+                  className="nd-tpl-select md-typescale-body-medium"
+                  value={templateId}
+                  onChange={(e) => changeTemplate(e.target.value)}
+                  aria-describedby="nd-template-hint"
+                >
+                  <option value="">请先选择质检模板…</option>
+                  {QC_TEMPLATES.map((t) => (
+                    <option key={t.id} value={t.id}>{t.name}（{t.code}）</option>
+                  ))}
+                </select>
+                <span id="nd-template-hint" className="md-typescale-label-small nd-tpl-hint">
+                  {templateChosen
+                    ? `已加载模板质检字段 ${allowedNames.size} 项，仅可配置模板内字段`
+                    : '选择模板后系统将默认勾选模板配置的质检字段，且仅可配置这些字段'}
+                </span>
+                {templateChosen && (
+                  <div className="nd-tpl-chips">
+                    {selectedTemplate!.fields.map((f) => (
+                      <span key={f} className="nd-tpl-chip">{f}</span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
 
           {/* 数据选取 */}
           <div className="nd-section nd-section--shuttle">
             <div className="md-typescale-label-large nd-section-title">数据选取</div>
-            <div className="nd-shuttle">
+            <div className={`nd-shuttle${!templateChosen ? ' nd-shuttle--locked' : ''}`}>
+              {!templateChosen && (
+                <div className="nd-shuttle-gate" role="status">
+                  <md-icon class="nd-shuttle-gate-icon">rule_folder</md-icon>
+                  <span className="md-typescale-body-medium nd-shuttle-gate-title">请先选择质检模板</span>
+                  <span className="md-typescale-body-small nd-shuttle-gate-desc">选定模板后将自动加载可质检字段，方可进行数据选取</span>
+                </div>
+              )}
               {/* 左：候选数据树 */}
               <div className="nd-shuttle-pane nd-candidate-pane">
                 <div className="nd-pane-header">
@@ -410,7 +513,7 @@ export function NewDatasetDialog({ open, onClose, onConfirm }: NewDatasetDialogP
                         {expanded && visibleBlocks.map((block) => {
                           const blockMatch = !filterText || block.name.toLowerCase().includes(filterText)
                           const blockExpanded = expandedBlocks.has(block.id)
-                          const blockState = getBlockCheckState(block, selected)
+                          const blockState = getBlockCheckState(block, selected, allowedNames)
                           const visibleWells = block.wells.filter((w) => {
                             if (blockMatch || oilMatch) return true
                             return w.name.toLowerCase().includes(filterText) || w.fields.some((f) => f.name.toLowerCase().includes(filterText))
@@ -441,7 +544,8 @@ export function NewDatasetDialog({ open, onClose, onConfirm }: NewDatasetDialogP
                               </button>
 
                               {blockExpanded && visibleWells.map((well) => {
-                                const wellState = getWellCheckState(well.id, well, selected)
+                                const wellState = getWellCheckState(well.id, well, selected, allowedNames)
+                                const wellAllowedCount = well.fields.filter((f) => allowedNames.has(f.name)).length
                                 const wellExpanded = expandedWells.has(well.id)
                                 const wellMatch = !filterText || well.name.toLowerCase().includes(filterText)
                                 const visibleFields = well.fields.filter((f) => {
@@ -464,22 +568,23 @@ export function NewDatasetDialog({ open, onClose, onConfirm }: NewDatasetDialogP
                                       <md-icon class="nd-tree-expand-icon">
                                         {wellExpanded ? 'expand_more' : 'chevron_right'}
                                       </md-icon>
-                                      {/* 井级全选复选框 */}
+                                      {/* 井级全选复选框（仅模板允许字段）*/}
                                       <input
                                         type="checkbox"
                                         className="nd-cbox"
                                         checked={wellState === 'checked'}
+                                        disabled={wellAllowedCount === 0}
                                         ref={(el) => {
                                           if (el) el.indeterminate = wellState === 'indeterminate'
                                         }}
                                         onChange={() => toggleCandWell(well)}
                                         onClick={(e) => e.stopPropagation()}
-                                        aria-label={`选择井 ${well.name} 全部字段`}
+                                        aria-label={`选择井 ${well.name} 模板质检字段`}
                                       />
                                       <md-icon class="nd-tree-icon">oil_barrel</md-icon>
                                       <span className="md-typescale-body-small nd-well-name">{well.name}</span>
                                       <span className="md-typescale-label-small nd-tree-count">
-                                        {well.fields.filter((f) => selected.has(`${well.id}::${f.id}`)).length}/{well.fields.length}
+                                        {well.fields.filter((f) => allowedNames.has(f.name) && selected.has(`${well.id}::${f.id}`)).length}/{wellAllowedCount}
                                       </span>
                                     </button>
 
@@ -495,19 +600,28 @@ export function NewDatasetDialog({ open, onClose, onConfirm }: NewDatasetDialogP
                                                 const key = `${well.id}::${field.id}`
                                                 const isCandChecked = candChecked.has(key)
                                                 const isAlreadySelected = selected.has(key)
+                                                const isAllowed = allowedNames.has(field.name)
+                                                const isLocked = !isAllowed
                                                 return (
-                                                  <label key={field.id} className={`nd-field-row${isAlreadySelected ? ' nd-field-row--done' : ''}`}>
+                                                  <label
+                                                    key={field.id}
+                                                    className={`nd-field-row${isAlreadySelected ? ' nd-field-row--done' : ''}${isLocked ? ' nd-field-row--locked' : ''}`}
+                                                    title={isLocked ? '该字段不在所选质检模板内，不可配置' : undefined}
+                                                  >
                                                     <input
                                                       type="checkbox"
                                                       className="nd-cbox"
-                                                      checked={isCandChecked}
-                                                      disabled={isAlreadySelected}
-                                                      onChange={() => toggleCandField(well.id, field.id)}
+                                                      checked={isCandChecked && isAllowed}
+                                                      disabled={isAlreadySelected || isLocked}
+                                                      onChange={() => toggleCandField(well.id, field.id, isAllowed)}
                                                       aria-label={field.name}
                                                     />
                                                     <span className="md-typescale-body-small nd-field-name">{field.name}</span>
                                                     {isAlreadySelected && (
                                                       <md-icon class="nd-field-done-icon">check_circle</md-icon>
+                                                    )}
+                                                    {isLocked && (
+                                                      <md-icon class="nd-field-lock-icon">lock</md-icon>
                                                     )}
                                                   </label>
                                                 )
@@ -689,13 +803,15 @@ export function NewDatasetDialog({ open, onClose, onConfirm }: NewDatasetDialogP
                 <strong>{totalCount}</strong> 个井字段组合
               </>
             ) : (
-              <span className="nd-footer-stats-empty">请选择至少一口井和一个字段</span>
+              <span className="nd-footer-stats-empty">
+                {templateChosen ? '请选择至少一口井和一个字段' : '请先选择质检模板'}
+              </span>
             )}
           </div>
           <div className="nd-footer-actions">
             <md-outlined-button onClick={handleClose}>取消</md-outlined-button>
             <md-filled-button
-              disabled={!name.trim() || selected.size === 0 || undefined}
+              disabled={!name.trim() || !templateChosen || selected.size === 0 || undefined}
               onClick={validateAndConfirm}
             >
               确认创建

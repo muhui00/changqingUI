@@ -73,15 +73,95 @@ const RATE_BARS = [
 const MISS_TYPES: MissingType[] = ['必填缺失', '空值', '哨兵值', '连续缺失', '整段缺失']
 const STATUS_LIST: CompStatus[] = ['待处理', '候选已生成', '已应用', '待复核', '无法补全']
 
-const TOOLS: { name: Tool; desc: string; config: string }[] = [
-  { name: '样条插值', desc: '连续测井/时间序列', config: '最大缺口 · 边界策略 · 平滑度' },
-  { name: '线性插值', desc: '连续时间序列', config: '最大缺口 · 边界策略' },
-  { name: 'KNN相似井', desc: '地质/工程/生产参数', config: '相似范围 · 特征字段 · K 值' },
-  { name: 'MICE', desc: '多字段联合缺失', config: '参与字段 · 迭代次数 · 随机种子' },
-  { name: '随机森林', desc: '非线性多特征', config: '训练范围 · 特征 · 模型版本' },
-  { name: '物理公式', desc: '明确工程关系', config: '公式 · 依赖字段 · 单位' },
-  { name: '报告抽取', desc: '文档中存在原始值', config: '报告 · 检索词 · 页码证据' },
+const TOOLS: { name: Tool; desc: string; config: string; icon: string }[] = [
+  { name: '样条插值', desc: '连续测井/时间序列', config: '最大缺口 · 边界策略 · 平滑度', icon: 'show_chart' },
+  { name: '线性插值', desc: '连续时间序列', config: '最大缺口 · 边界策略', icon: 'timeline' },
+  { name: 'KNN相似井', desc: '地质/工程/生产参数', config: '相似范围 · 特征字段 · K 值', icon: 'hub' },
+  { name: 'MICE', desc: '多字段联合缺失', config: '参与字段 · 迭代次数 · 随机种子', icon: 'account_tree' },
+  { name: '随机森林', desc: '非线性多特征', config: '训练范围 · 特征 · 模型版本', icon: 'forest' },
+  { name: '物理公式', desc: '明确工程关系', config: '公式 · 依赖字段 · 单位', icon: 'functions' },
+  { name: '报告抽取', desc: '大模型阅读文档抽取原始值', config: '资料来源 · 抽取模型 · 抽取指令', icon: 'auto_awesome' },
 ]
+
+type ChartKind = 'spline' | 'linear' | 'knn' | 'mice' | 'rf' | 'formula' | 'report'
+interface ParamControl { key: string; label: string; type: 'select' | 'input' | 'chips' | 'textarea'; options?: string[]; value: string; hint?: string }
+interface ToolDetail {
+  method: string
+  applicable: string
+  params: ParamControl[]
+  candidate: string
+  confidence: number
+  confLevel: ConfLevel
+  evidence: string
+  chart: ChartKind
+}
+
+// 每个补全工具的参数配置、候选预览与可视化类型（示意值，随工具切换）
+const TOOL_DETAILS: Record<Tool, ToolDetail> = {
+  '样条插值': {
+    method: '三次样条平滑插值', applicable: '适用于连续测井曲线、时间序列的短-中缺口',
+    params: [
+      { key: 'gap', label: '最大缺口', type: 'select', options: ['≤30 点', '≤50 点', '≤100 点'], value: '≤50 点' },
+      { key: 'boundary', label: '边界策略', type: 'select', options: ['自然边界', '固定端点', '周期边界'], value: '自然边界' },
+      { key: 'smooth', label: '平滑度 λ', type: 'select', options: ['0.2 · 贴合', '0.5 · 均衡', '0.8 · 平滑'], value: '0.5 · 均衡' },
+    ],
+    candidate: '14.2~15.8% 序列', confidence: 88, confLevel: '高', evidence: '相邻深度段 + 邻井T1h', chart: 'spline',
+  },
+  '线性插值': {
+    method: '分段线性插值', applicable: '适用于变化平缓、缺口两端有效的连续序列',
+    params: [
+      { key: 'gap', label: '最大缺口', type: 'select', options: ['≤10 点', '≤30 点', '≤50 点'], value: '≤30 点' },
+      { key: 'boundary', label: '边界策略', type: 'select', options: ['端点延拓', '端点置空'], value: '端点延拓' },
+    ],
+    candidate: '14.0~15.9% 线性', confidence: 76, confLevel: '中', evidence: '缺失段前后端点趋势', chart: 'linear',
+  },
+  'KNN相似井': {
+    method: 'K 近邻相似井加权', applicable: '适用于地质/工程/生产参数的整段或全井缺失',
+    params: [
+      { key: 'scope', label: '相似范围', type: 'select', options: ['同区块', '同层系', '全盆地'], value: '同区块' },
+      { key: 'feat', label: '特征字段', type: 'chips', options: ['井深', '孔隙度', 'GR', '邻井距离', '砂厚'], value: '井深,孔隙度,GR' },
+      { key: 'k', label: 'K 值', type: 'select', options: ['3', '5', '8'], value: '5' },
+    ],
+    candidate: '15.1% (K=5 加权)', confidence: 82, confLevel: '高', evidence: '5 口相似井加权', chart: 'knn',
+  },
+  'MICE': {
+    method: '多重插补链式方程', applicable: '适用于多字段同时缺失、字段间存在相关关系',
+    params: [
+      { key: 'fields', label: '参与字段', type: 'chips', options: ['孔隙度', '渗透率', '含气饱和度', 'GR', '声波'], value: '孔隙度,渗透率,GR' },
+      { key: 'iter', label: '迭代次数', type: 'select', options: ['5', '10', '20'], value: '10' },
+      { key: 'seed', label: '随机种子', type: 'input', value: '42' },
+    ],
+    candidate: '15.3% ± 0.6', confidence: 74, confLevel: '中', evidence: '孔渗-GR 联合回归', chart: 'mice',
+  },
+  '随机森林': {
+    method: '随机森林回归', applicable: '适用于非线性、多特征强相关的复杂关系',
+    params: [
+      { key: 'train', label: '训练范围', type: 'select', options: ['本井历史', '同区块', '全区'], value: '同区块' },
+      { key: 'feat', label: '特征', type: 'chips', options: ['井深', 'GR', '密度', '中子', '电阻率'], value: '井深,GR,密度,中子' },
+      { key: 'ver', label: '模型版本', type: 'select', options: ['v2.3', 'v2.4-beta'], value: 'v2.3' },
+    ],
+    candidate: '15.0%', confidence: 80, confLevel: '高', evidence: '12 特征回归 R²=0.86', chart: 'rf',
+  },
+  '物理公式': {
+    method: '岩石物理经验公式', applicable: '适用于依赖字段完整、存在明确工程/物理关系',
+    params: [
+      { key: 'formula', label: '公式', type: 'select', options: ['密度孔隙度', '声波孔隙度', '中子-密度交会'], value: '密度孔隙度' },
+      { key: 'dep', label: '依赖字段', type: 'chips', options: ['体积密度', '骨架密度', '流体密度'], value: '体积密度,骨架密度,流体密度' },
+      { key: 'unit', label: '单位', type: 'select', options: ['%', 'v/v'], value: '%' },
+    ],
+    candidate: '15.4%', confidence: 90, confLevel: '高', evidence: 'φ=(ρma−ρb)/(ρma−ρf)', chart: 'formula',
+  },
+  '报告抽取': {
+    method: '大模型智能抽取', applicable: '由大模型阅读录井、试井、完井等文档资料，理解上下文后抽取原始值并回溯出处',
+    params: [
+      { key: 'source', label: '资料来源', type: 'chips', options: ['录井报告', '试井报告', '完井报告', '地质总结', '钻井日报'], value: '录井报告,完井报告' },
+      { key: 'model', label: '抽取模型', type: 'select', options: ['长庆·地质大模型 v2', '通用大模型 72B', '轻量抽取模型'], value: '长庆·地质大模型 v2' },
+      { key: 'prompt', label: '抽取指令', type: 'textarea', value: '抽取 2450–2478m 井段的平均孔隙度数值与量纲，并给出所在报告名称、页码与原文出处', hint: '大模型将据此理解目标并输出结构化结果与证据' },
+      { key: 'threshold', label: '证据置信阈值', type: 'select', options: ['≥ 0.80', '≥ 0.90', '≥ 0.95'], value: '≥ 0.90' },
+    ],
+    candidate: '15.6% (录井)', confidence: 96, confLevel: '高', evidence: '录井报告 P.12 表3 · 大模型抽取', chart: 'report',
+  },
+}
 
 export function CompletenessWorkspace({ datasetName = '苏里格区块2024年综合数据集', onBack, onSwitchTab }: CompletenessWorkspaceProps) {
   const [records, setRecords] = useState<MissRecord[]>(MOCK)
@@ -91,6 +171,8 @@ export function CompletenessWorkspace({ datasetName = '苏里格区块2024年综
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [toolOpen, setToolOpen] = useState(false)
   const [activeRecord, setActiveRecord] = useState<MissRecord | null>(null)
+  const [selectedTool, setSelectedTool] = useState<Tool>('样条插值')
+  const [paramValues, setParamValues] = useState<Record<string, string>>({})
 
   const filtered = records.filter(r =>
     (filterType === '全部' || r.missType === filterType) &&
@@ -106,7 +188,14 @@ export function CompletenessWorkspace({ datasetName = '苏里格区块2024年综
   const toggle = (id: string) => setSelected(p => { const n = new Set(p); n.has(id) ? n.delete(id) : n.add(id); return n })
   const toggleAll = () => setSelected(selected.size === filtered.length ? new Set() : new Set(filtered.map(r => r.id)))
 
-  const openTool = (r: MissRecord) => { setActiveRecord(r); setToolOpen(true) }
+  const initParams = (tool: Tool) => {
+    const next: Record<string, string> = {}
+    TOOL_DETAILS[tool].params.forEach(p => { next[p.key] = p.value })
+    setParamValues(next)
+  }
+  const openTool = (r: MissRecord) => { setActiveRecord(r); setSelectedTool(r.tool); initParams(r.tool); setToolOpen(true) }
+  const switchTool = (tool: Tool) => { setSelectedTool(tool); initParams(tool) }
+  const detail = TOOL_DETAILS[selectedTool]
 
   return (
     <div className="cs-workspace">
@@ -333,27 +422,77 @@ export function CompletenessWorkspace({ datasetName = '苏里格区块2024年综
             <div className="cs-dialog-body cs-dialog-body--grid">
               <div className="cs-comp-left">
                 <div className="cs-form-section-title">选择补全工具</div>
-                <div className="cs-tool-list">
+                <div className="cs-tool-list" role="tablist" aria-label="补全工具">
                   {TOOLS.map(t => (
-                    <label key={t.name} className={`cs-tool-opt${t.name === activeRecord.tool ? ' cs-tool-opt--active' : ''}`}>
-                      <input type="radio" name="tool" defaultChecked={t.name === activeRecord.tool} style={{ display: 'none' }} />
-                      <div className="cs-tool-opt-name">{t.name}</div>
+                    <button key={t.name} type="button" role="tab"
+                      aria-selected={t.name === selectedTool}
+                      className={`cs-tool-opt${t.name === selectedTool ? ' cs-tool-opt--active' : ''}`}
+                      onClick={() => switchTool(t.name)}>
+                      <div className="cs-tool-opt-head">
+                        <md-icon className="cs-tool-opt-icon">{t.icon}</md-icon>
+                        <div className="cs-tool-opt-name">{t.name}</div>
+                        {t.name === activeRecord.tool && <span className="cs-tool-opt-rec">推荐</span>}
+                      </div>
                       <div className="cs-tool-opt-desc">{t.desc}</div>
                       <div className="cs-tool-opt-config">{t.config}</div>
-                    </label>
+                    </button>
                   ))}
                 </div>
               </div>
               <div className="cs-comp-right">
-                <div className="cs-form-section-title">候选预览与证据</div>
+                {/* 工具参数配置：随所选工具切换 */}
+                <div className="cs-form-section-title">参数配置 · {selectedTool}</div>
+                <div className="cs-tool-method">
+                  <md-icon style={{ fontSize: 14 }}>{TOOLS.find(t => t.name === selectedTool)?.icon}</md-icon>
+                  <div>
+                    <div className="cs-tool-method-name">{detail.method}</div>
+                    <div className="cs-tool-method-desc">{detail.applicable}</div>
+                  </div>
+                </div>
+                <div className="cs-param-grid">
+                  {detail.params.map(p => (
+                    <div key={p.key} className={`cs-param-field${p.type === 'chips' || p.type === 'textarea' ? ' cs-param-field--wide' : ''}`}>
+                      <label className="cs-param-label">{p.label}</label>
+                      {p.type === 'select' ? (
+                        <select className="cs-filter-select cs-param-control" value={paramValues[p.key] ?? p.value}
+                          onChange={e => setParamValues(v => ({ ...v, [p.key]: e.target.value }))}>
+                          {p.options!.map(o => <option key={o}>{o}</option>)}
+                        </select>
+                      ) : p.type === 'input' ? (
+                        <input className="cs-param-input cs-param-control" value={paramValues[p.key] ?? p.value}
+                          onChange={e => setParamValues(v => ({ ...v, [p.key]: e.target.value }))} />
+                      ) : p.type === 'textarea' ? (
+                        <textarea className="cs-param-textarea cs-param-control" rows={2} value={paramValues[p.key] ?? p.value}
+                          onChange={e => setParamValues(v => ({ ...v, [p.key]: e.target.value }))} />
+                      ) : (
+                        <div className="cs-param-chips">
+                          {p.options!.map(o => {
+                            const on = (paramValues[p.key] ?? p.value).split(',').includes(o)
+                            return (
+                              <button key={o} type="button" className={`cs-param-chip${on ? ' cs-param-chip--on' : ''}`}
+                                onClick={() => setParamValues(v => {
+                                  const cur = (v[p.key] ?? p.value).split(',').filter(Boolean)
+                                  const nextArr = cur.includes(o) ? cur.filter(x => x !== o) : [...cur, o]
+                                  return { ...v, [p.key]: nextArr.join(',') }
+                                })}>{o}</button>
+                            )
+                          })}
+                        </div>
+                      )}
+                      {p.hint && <span className="cs-param-hint">{p.hint}</span>}
+                    </div>
+                  ))}
+                </div>
+
+                <div className="cs-form-section-title" style={{ marginTop: 4 }}>候选预览与证据</div>
                 <div className="cs-comp-preview">
                   <div className="cs-comp-preview-row"><span>缺失位置</span><b>{activeRecord.location}</b></div>
-                  <div className="cs-comp-preview-row"><span>候选值</span><b className="cs-val">{activeRecord.candidate}</b></div>
-                  <div className="cs-comp-preview-row"><span>置信度</span>{activeRecord.confidence > 0 ? <ConfPill level={activeRecord.confLevel} value={activeRecord.confidence} /> : <b>待生成</b>}</div>
-                  <div className="cs-comp-preview-row"><span>证据来源</span><b>{activeRecord.evidence}</b></div>
+                  <div className="cs-comp-preview-row"><span>候选值</span><b className="cs-val">{detail.candidate}</b></div>
+                  <div className="cs-comp-preview-row"><span>置信度</span><ConfPill level={detail.confLevel} value={detail.confidence} /></div>
+                  <div className="cs-comp-preview-row"><span>证据来源</span><b>{detail.evidence}</b></div>
                 </div>
                 <div className="cs-comp-chart">
-                  <MiniFillChart />
+                  <ToolViz kind={detail.chart} />
                 </div>
                 <div className="cs-converter-hint">
                   <md-icon style={{ fontSize: 14 }}>info</md-icon>
@@ -363,8 +502,14 @@ export function CompletenessWorkspace({ datasetName = '苏里格区块2024年综
             </div>
             <div className="cs-dialog-footer">
               <button className="cs-btn cs-btn--ghost" onClick={() => setToolOpen(false)}>取消</button>
-              <button className="cs-btn cs-btn--ghost">生成候选</button>
-              <button className="cs-btn cs-btn--primary" onClick={() => { setRecords(p => p.map(x => x.id === activeRecord.id ? { ...x, status: '已应用' } : x)); setToolOpen(false) }}>应用到工作副本</button>
+              <button className="cs-btn cs-btn--ghost"
+                onClick={() => setRecords(p => p.map(x => x.id === activeRecord.id ? { ...x, tool: selectedTool, candidate: detail.candidate, confidence: detail.confidence, confLevel: detail.confLevel, evidence: detail.evidence, status: '候选已生成' } : x))}>
+                生成候选
+              </button>
+              <button className="cs-btn cs-btn--primary"
+                onClick={() => { setRecords(p => p.map(x => x.id === activeRecord.id ? { ...x, tool: selectedTool, candidate: detail.candidate, confidence: detail.confidence, confLevel: detail.confLevel, evidence: detail.evidence, status: '已应用' } : x)); setToolOpen(false) }}>
+                应用到工作副本
+              </button>
             </div>
           </div>
         </div>
@@ -385,8 +530,129 @@ function CompStatusBadge({ status }: { status: CompStatus }) {
   return <span className={`cs-status ${map[status]}`}>{status}</span>
 }
 
+// 按工具类型分发不同的候选可视化
+function ToolViz({ kind }: { kind: ChartKind }) {
+  if (kind === 'spline') return <MiniFillChart smooth />
+  if (kind === 'linear') return <MiniFillChart smooth={false} />
+  if (kind === 'knn') return <KnnViz />
+  if (kind === 'mice') return <MiceViz />
+  if (kind === 'rf') return <RfViz />
+  if (kind === 'formula') return <FormulaViz />
+  return <ReportViz />
+}
+
+// KNN：相似井相似度加权
+function KnnViz() {
+  const wells = [
+    { name: '苏36-08井', sim: 0.94, val: '15.0%' },
+    { name: '苏36-15井', sim: 0.89, val: '15.3%' },
+    { name: '苏37-03井', sim: 0.85, val: '14.8%' },
+    { name: '苏36-09井', sim: 0.81, val: '15.2%' },
+    { name: '苏37-07井', sim: 0.77, val: '15.1%' },
+  ]
+  return (
+    <div className="cs-viz-list">
+      {wells.map(w => (
+        <div key={w.name} className="cs-viz-bar-row">
+          <span className="cs-viz-bar-name">{w.name}</span>
+          <div className="cs-viz-bar-track"><div className="cs-viz-bar-fill" style={{ width: `${w.sim * 100}%` }} /></div>
+          <span className="cs-viz-bar-val">{(w.sim * 100).toFixed(0)}% · {w.val}</span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+// MICE：多次插补迭代收敛
+function MiceViz() {
+  const W = 320, H = 110, padL = 24, padR = 8, padT = 10, padB = 20
+  const iters = [16.2, 15.6, 15.4, 15.35, 15.32, 15.31, 15.3, 15.3, 15.3, 15.3]
+  const minV = 15.2, maxV = 16.3, range = maxV - minV
+  const n = iters.length
+  const toX = (i: number) => padL + i * (W - padL - padR) / (n - 1)
+  const toY = (v: number) => padT + (1 - (v - minV) / range) * (H - padT - padB)
+  const pts = iters.map((v, i) => `${toX(i)},${toY(v)}`).join(' ')
+  return (
+    <svg width="100%" viewBox={`0 0 ${W} ${H}`} aria-label="MICE 迭代收敛" style={{ display: 'block' }}>
+      <line x1={padL} y1={toY(15.3)} x2={W - padR} y2={toY(15.3)} stroke="#c8e6c9" strokeDasharray="3 3" />
+      <polyline points={pts} fill="none" stroke="#6a1b9a" strokeWidth={1.6} />
+      {iters.map((v, i) => <circle key={i} cx={toX(i)} cy={toY(v)} r={2.2} fill="#6a1b9a" />)}
+      <text x={padL} y={H - 6} fontSize={9} fill="#78909c">迭代 1</text>
+      <text x={W - padR} y={H - 6} fontSize={9} fill="#78909c" textAnchor="end">收敛 15.3%</text>
+    </svg>
+  )
+}
+
+// 随机森林：特征重要度
+function RfViz() {
+  const feats = [
+    { name: 'GR', imp: 0.34 },
+    { name: '密度', imp: 0.27 },
+    { name: '中子', imp: 0.19 },
+    { name: '井深', imp: 0.12 },
+    { name: '电阻率', imp: 0.08 },
+  ]
+  return (
+    <div className="cs-viz-list">
+      {feats.map(f => (
+        <div key={f.name} className="cs-viz-bar-row">
+          <span className="cs-viz-bar-name">{f.name}</span>
+          <div className="cs-viz-bar-track"><div className="cs-viz-bar-fill cs-viz-bar-fill--rf" style={{ width: `${f.imp / 0.34 * 100}%` }} /></div>
+          <span className="cs-viz-bar-val">{(f.imp * 100).toFixed(0)}%</span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+// 物理公式：公式与依赖
+function FormulaViz() {
+  return (
+    <div className="cs-viz-formula">
+      <div className="cs-viz-formula-eq">φ = (ρ<sub>ma</sub> − ρ<sub>b</sub>) / (ρ<sub>ma</sub> − ρ<sub>f</sub>)</div>
+      <div className="cs-viz-formula-sub">
+        <div><span>ρ<sub>ma</sub> 骨架密度</span><b>2.65 g/cm³</b></div>
+        <div><span>ρ<sub>b</sub> 体积密度</span><b>2.41 g/cm³</b></div>
+        <div><span>ρ<sub>f</sub> 流体密度</span><b>1.00 g/cm³</b></div>
+        <div className="cs-viz-formula-res"><span>φ 计算孔隙度</span><b>15.4%</b></div>
+      </div>
+    </div>
+  )
+}
+
+// 报告抽取：大模型智能抽取结果 + 结构化字段 + 原文证据 + 推理说明
+function ReportViz() {
+  return (
+    <div className="cs-viz-report">
+      <div className="cs-viz-report-head">
+        <md-icon style={{ fontSize: 15 }}>auto_awesome</md-icon>
+        大模型抽取结果
+        <span className="cs-viz-report-model">长庆·地质大模型 v2</span>
+      </div>
+      {/* 结构化抽取结果 */}
+      <div className="cs-viz-llm-fields">
+        <div><span>目标字段</span><b>平均孔隙度</b></div>
+        <div><span>抽取值</span><b className="cs-val">15.6 %</b></div>
+        <div><span>井段</span><b>2450–2478m</b></div>
+        <div><span>证据出处</span><b>录井报告 P.12 表3</b></div>
+      </div>
+      {/* 原文证据片段 */}
+      <div className="cs-viz-report-snippet">
+        “……2450–2478m 井段 <mark>平均孔隙度 15.6%</mark>，有效厚度 21.3m，
+        岩性以中砂岩为主，物性中等偏好……”
+      </div>
+      {/* 模型推理说明 */}
+      <div className="cs-viz-llm-reason">
+        <md-icon style={{ fontSize: 14 }}>psychology</md-icon>
+        <span>模型判断：“平均孔隙度”与目标字段语义一致，量纲为 %，且与邻井 15.1–15.8% 区间吻合，判定为高可信原始值。</span>
+      </div>
+      <div className="cs-viz-report-foot">证据置信 96% · 已定位页码 · 引用 1 处原文</div>
+    </div>
+  )
+}
+
 // 补全前后迷你曲线：灰虚线=补全前，蓝实线=候选补全后
-function MiniFillChart() {
+function MiniFillChart({ smooth = true }: { smooth?: boolean }) {
   const W = 320, H = 110, padL = 8, padR = 8, padT = 10, padB = 8
   const orig = [15.2, 15.4, NaN, NaN, NaN, 15.9, 16.1, 16.0]
   const fill = [15.2, 15.4, 15.5, 15.6, 15.8, 15.9, 16.1, 16.0]
@@ -397,13 +663,24 @@ function MiniFillChart() {
   const stepX = (W - padL - padR) / (n - 1)
   const toX = (i: number) => padL + i * stepX
   const toY = (v: number) => padT + (1 - (v - minV) / range) * (H - padT - padB)
-  const fillPts = fill.map((v, i) => `${toX(i)},${toY(v)}`).join(' ')
+  const pts = fill.map((v, i) => [toX(i), toY(v)] as const)
+  // smooth=true 生成三次样条平滑路径；否则分段直线
+  const smoothPath = () => {
+    let d = `M ${pts[0][0]},${pts[0][1]}`
+    for (let i = 0; i < pts.length - 1; i++) {
+      const [x0, y0] = pts[i], [x1, y1] = pts[i + 1]
+      const cx = (x0 + x1) / 2
+      d += ` C ${cx},${y0} ${cx},${y1} ${x1},${y1}`
+    }
+    return d
+  }
+  const linePath = `M ${pts.map(p => `${p[0]},${p[1]}`).join(' L ')}`
   return (
     <svg width="100%" viewBox={`0 0 ${W} ${H}`} aria-label="补全前后对比" style={{ display: 'block' }}>
       {/* 缺失段灰色背景 */}
       <rect x={toX(2)} y={padT} width={toX(4) - toX(2)} height={H - padT - padB} fill="#eceff1" opacity={0.7} />
-      {/* 候选补全后 实线 */}
-      <polyline points={fillPts} fill="none" stroke="#1565c0" strokeWidth={1.6} />
+      {/* 候选补全后 曲线/直线 */}
+      <path d={smooth ? smoothPath() : linePath} fill="none" stroke="#1565c0" strokeWidth={1.6} />
       {/* 原始有效点 */}
       {orig.map((v, i) => !isNaN(v) ? <circle key={i} cx={toX(i)} cy={toY(v)} r={2.5} fill="#37474f" /> : null)}
       {/* 补全候选点 */}

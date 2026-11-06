@@ -443,9 +443,9 @@ export function ConsistencyWorkspace({ datasetName = '苏里格区块2024年综�
           </div>
 
           <div className="cs-viz-layout">
-            {/* 左侧字段范围（与曲线图联动） */}
-            <aside className="cs-viz-fields" aria-label="字段范围">
-              <div className="cs-viz-fields-title">字段范围</div>
+            {/* 左侧数据范围（与曲线图联动） */}
+            <aside className="cs-viz-fields" aria-label="数据范围">
+              <div className="cs-viz-fields-title">数据范围</div>
               <ul className="cs-viz-field-list">
                 {FIELDS.map(f => {
                   const hasAnomaly = (SERIES_DATA[f] ?? []).some(s =>
@@ -478,7 +478,7 @@ export function ConsistencyWorkspace({ datasetName = '苏里格区块2024年综�
               </div>
               <div className="cs-chart-note">
                 <md-icon style={{ fontSize: 13 }}>info</md-icon>
-                曲线图字段与左侧字段范围联动；红色圆点为自动识别的异常数据点，可在下方明细中处理。
+                曲线图字段与左侧数据范围联动；红色圆点为自动识别的异常数据点，可在下方明细中处理。
               </div>
             </div>
           </div>

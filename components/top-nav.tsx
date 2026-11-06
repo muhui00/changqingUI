@@ -14,8 +14,7 @@ interface TopNavProps {
   onNavWeightedScoring?: () => void
 }
 
-export function TopNav({ currentDataset, activePage = 'overview', onNavOverview, onNavReportCenter, onNavSampleManagement, onNavVisualization, onNavFieldStandard, onNavQCRule, onNavWeightedScoring }: TopNavProps) {
-  const [achieveMenuOpen, setAchieveMenuOpen] = useState(false)
+export function TopNav({ activePage = 'overview', onNavOverview, onNavReportCenter, onNavVisualization, onNavFieldStandard, onNavQCRule, onNavWeightedScoring }: TopNavProps) {
   const [configMenuOpen, setConfigMenuOpen] = useState(false)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
 
@@ -23,14 +22,18 @@ export function TopNav({ currentDataset, activePage = 'overview', onNavOverview,
     <header className="top-nav">
       {/* 左侧：平台标识 + 名称 */}
       <div className="top-nav-brand">
-        <div className="top-nav-logo" aria-hidden="true">
-          <md-icon>hub</md-icon>
+        <div className="top-nav-logo">
+          <img src="/images/logo.png" alt="长庆油田标志" width={38} height={38} />
         </div>
         <div className="top-nav-title-group">
           <span className="top-nav-platform-name md-typescale-title-medium">
             长庆油气田数据质检平台
           </span>
         </div>
+        <button className="top-nav-field-pill" aria-label="切换油田">
+          长庆油田
+          <md-icon>sync_alt</md-icon>
+        </button>
       </div>
 
       {/* 中间：主导航 */}
@@ -53,34 +56,14 @@ export function TopNav({ currentDataset, activePage = 'overview', onNavOverview,
           数据可视化
         </button>
 
-        {/* 成果管理下拉 */}
-        <div className="top-nav-dropdown-wrap" style={{ position: 'relative' }}>
-          <button
-            className="top-nav-link"
-            id="achieve-btn"
-            aria-haspopup="menu"
-            aria-expanded={achieveMenuOpen}
-            onClick={() => setAchieveMenuOpen(!achieveMenuOpen)}
-          >
-            <md-icon>inventory_2</md-icon>
-            成果管理
-            <md-icon class="top-nav-chevron">expand_more</md-icon>
-          </button>
-          <md-menu
-            anchor="achieve-btn"
-            open={achieveMenuOpen || undefined}
-            onclosed={() => setAchieveMenuOpen(false)}
-          >
-            <md-menu-item onClick={() => { setAchieveMenuOpen(false); onNavSampleManagement?.() }}>
-              <md-icon slot="start">biotech</md-icon>
-              <div slot="headline">样本管理</div>
-            </md-menu-item>
-            <md-menu-item onClick={() => { setAchieveMenuOpen(false); onNavReportCenter?.() }}>
-              <md-icon slot="start">description</md-icon>
-              <div slot="headline">质检报告管理</div>
-            </md-menu-item>
-          </md-menu>
-        </div>
+        <button
+          className={`top-nav-link${activePage === 'report-center' || activePage === 'report-preview' ? ' top-nav-link--active' : ''}`}
+          aria-current={activePage === 'report-center' ? 'page' : undefined}
+          onClick={onNavReportCenter}
+        >
+          <md-icon>description</md-icon>
+          质检报告管理
+        </button>
 
         {/* 质检配置下拉 */}
         <div className="top-nav-dropdown-wrap" style={{ position: 'relative' }}>
@@ -110,7 +93,7 @@ export function TopNav({ currentDataset, activePage = 'overview', onNavOverview,
             </md-menu-item>
             <md-menu-item onClick={() => { setConfigMenuOpen(false); onNavWeightedScoring?.() }}>
               <md-icon slot="start">assessment</md-icon>
-              <div slot="headline">综合加权评分</div>
+              <div slot="headline">模板配置</div>
             </md-menu-item>
           </md-menu>
         </div>

@@ -9,6 +9,7 @@ export type DatasetStatus =
   | '已完成'
   | '已归档'
   | '初始化中'
+  | '待质检'
   | '创建失败'
 
 export interface Dataset {
@@ -67,6 +68,7 @@ const STATUS_CONFIG: Record<DatasetStatus, { color: string; bg: string; label: s
   已完成: { color: '#2e7d32', bg: '#e8f5e9', label: '已完成' },
   已归档: { color: '#546e7a', bg: '#eceff1', label: '已归档' },
   初始化中: { color: '#6a1b9a', bg: '#f3e5f5', label: '初始化中' },
+  待质检: { color: '#2f6be0', bg: '#e3ecfd', label: '待质检' },
   创建失败: { color: '#c62828', bg: '#ffebee', label: '创建失败' },
 }
 
@@ -78,9 +80,11 @@ interface DatasetListProps {
   collapsed: boolean
   onToggleCollapse: () => void
   onViewReport?: (datasetId: string) => void
+  /** 提供时，新建数据集进入全屏工作台，而不是打开弹窗 */
+  onCreateDataset?: () => void
 }
 
-export function DatasetList({ datasets, onDatasetsChange, selectedId, onSelect, collapsed, onToggleCollapse, onViewReport }: DatasetListProps) {
+export function DatasetList({ datasets, onDatasetsChange, selectedId, onSelect, collapsed, onToggleCollapse, onViewReport, onCreateDataset }: DatasetListProps) {
   const [search, setSearch] = useState('')
   const [filterStatus, setFilterStatus] = useState<DatasetStatus | '全部'>('全部')
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null)
@@ -133,7 +137,7 @@ export function DatasetList({ datasets, onDatasetsChange, selectedId, onSelect, 
 
       {/* 新建按钮 */}
       <div className="dataset-list-new">
-        <md-outlined-button class="dataset-new-btn" onClick={() => setDialogOpen(true)}>
+        <md-outlined-button class="dataset-new-btn" onClick={() => (onCreateDataset ? onCreateDataset() : setDialogOpen(true))}>
           <md-icon slot="icon">add</md-icon>
           新建数据集
         </md-outlined-button>

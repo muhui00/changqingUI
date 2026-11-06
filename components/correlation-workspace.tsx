@@ -74,6 +74,38 @@ export function CorrelationWorkspace({ datasetName = '苏里格区块2024年综�
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [algoOpen, setAlgoOpen] = useState(false)
 
+  // ── 相关性算法配置 ──
+  const [algoMethod, setAlgoMethod] = useState<'Pearson' | 'Spearman' | '时间滞后'>('Pearson')
+  const [regMethod, setRegMethod] = useState<'线性回归' | '多元回归'>('线性回归')
+  const [groupField, setGroupField] = useState('井型')
+  const [minSample, setMinSample] = useState('30')
+  const [residualSigma, setResidualSigma] = useState('2.5')
+  const [maxLag, setMaxLag] = useState('5')
+  const [lagStep, setLagStep] = useState('1 天')
+  const [regFeatures, setRegFeatures] = useState<string[]>(['砂比', '携砂液量'])
+  const [alignMethod, setAlignMethod] = useState('最近点')
+  const [normMethod, setNormMethod] = useState('Z-score')
+  const [analysisScope, setAnalysisScope] = useState('当前井')
+  const [processTarget, setProcessTarget] = useState('主字段')
+  const [previewResult, setPreviewResult] = useState<null | { sample: number; coef: string; p: string; note: string }>(null)
+
+  const REG_FEATURE_OPTIONS = ['砂比', '携砂液量', '油压', '排量', '施工时长']
+  const toggleRegFeature = (f: string) =>
+    setRegFeatures(prev => (prev.includes(f) ? prev.filter(x => x !== f) : [...prev, f]))
+
+  // 依据当前配置生成一份示意预览结果
+  const runPreview = () => {
+    const base = algoMethod === 'Spearman' ? 0.74 : algoMethod === '时间滞后' ? 0.81 : 0.86
+    const coef = algoMethod === 'Spearman' ? `ρ = ${base.toFixed(2)}` : algoMethod === '时间滞后' ? `r = ${base.toFixed(2)} (滞后 ${maxLag})` : `r = ${base.toFixed(2)}`
+    const sample = Math.max(0, Number(minSample) || 0) + 148
+    setPreviewResult({
+      sample,
+      coef,
+      p: base > 0.8 ? 'p < 0.001' : 'p = 0.004',
+      note: `${algoMethod} · ${regMethod} · 按「${groupField}」分组 · ${normMethod} 归一化`,
+    })
+  }
+
   const filtered = records.filter(r =>
     (filterSource === '全部' || r.source === filterSource) &&
     (filterStatus === '全部' || r.status === filterStatus))
@@ -116,7 +148,7 @@ export function CorrelationWorkspace({ datasetName = '苏里格区块2024年综�
           </select>
         </div>
         <div className="cs-toolbar-right">
-          <button className="cs-btn cs-btn--sm cs-btn--ghost" onClick={() => setAlgoOpen(true)}><md-icon style={{ fontSize: 14 }}>tune</md-icon>算法配置</button>
+          <button className="cs-btn cs-btn--sm cs-btn--ghost" onClick={() => { setPreviewResult(null); setAlgoOpen(true) }}><md-icon style={{ fontSize: 14 }}>tune</md-icon>算法配置</button>
           <select className="cs-filter-select" value={filterSource} onChange={e => setFilterSource(e.target.value as typeof filterSource)}>
             <option value="全部">全部来源</option>
             {SOURCES.map(s => <option key={s}>{s}</option>)}
@@ -238,31 +270,80 @@ export function CorrelationWorkspace({ datasetName = '苏里格区块2024年综�
               <div className="cs-comp-left">
                 <div className="cs-form-section-title">相关性算法</div>
                 <div className="cs-chip-group">
-                  {['Pearson', 'Spearman', '时间滞后'].map((m, i) => <span key={m} className={`cs-tool-chip${i === 0 ? ' cs-tool-chip--active' : ''}`}>{m}</span>)}
+                  {(['Pearson', 'Spearman', '时间滞后'] as const).map(m => (
+                    <button
+                      key={m}
+                      type="button"
+                      className={`cs-tool-chip${algoMethod === m ? ' cs-tool-chip--active' : ''}`}
+                      onClick={() => { setAlgoMethod(m); setPreviewResult(null) }}
+                    >{m}</button>
+                  ))}
                 </div>
-                <div className="cs-form-row" style={{ marginTop: 12 }}><label className="cs-form-label">分组字段</label><select className="cs-select"><option>井型</option><option>区块</option><option>层位</option></select></div>
-                <div className="cs-form-row"><label className="cs-form-label">最小样本数</label><input className="cs-input" defaultValue="30" type="number" /></div>
+                {/* 时间滞后专属参数 */}
+                {algoMethod === '时间滞后' && (
+                  <>
+                    <div className="cs-form-row" style={{ marginTop: 12 }}><label className="cs-form-label">最大滞后</label><select className="cs-select" value={maxLag} onChange={e => setMaxLag(e.target.value)}><option>3</option><option>5</option><option>10</option></select></div>
+                    <div className="cs-form-row"><label className="cs-form-label">滞后步长</label><select className="cs-select" value={lagStep} onChange={e => setLagStep(e.target.value)}><option>1 天</option><option>1 小时</option><option>1 米</option></select></div>
+                  </>
+                )}
+                <div className="cs-form-row" style={{ marginTop: 12 }}><label className="cs-form-label">分组字段</label><select className="cs-select" value={groupField} onChange={e => setGroupField(e.target.value)}><option>井型</option><option>区块</option><option>层位</option><option>不分组</option></select></div>
+                <div className="cs-form-row"><label className="cs-form-label">最小样本数</label><input className="cs-input" value={minSample} onChange={e => setMinSample(e.target.value)} type="number" min="1" /></div>
                 <div className="cs-form-section-title" style={{ marginTop: 12 }}>回归算法</div>
                 <div className="cs-chip-group">
-                  {['线性回归', '多元回归'].map((m, i) => <span key={m} className={`cs-tool-chip${i === 0 ? ' cs-tool-chip--active' : ''}`}>{m}</span>)}
+                  {(['线性回归', '多元回归'] as const).map(m => (
+                    <button
+                      key={m}
+                      type="button"
+                      className={`cs-tool-chip${regMethod === m ? ' cs-tool-chip--active' : ''}`}
+                      onClick={() => { setRegMethod(m); setPreviewResult(null) }}
+                    >{m}</button>
+                  ))}
                 </div>
-                <div className="cs-form-row" style={{ marginTop: 12 }}><label className="cs-form-label">残差阈值(σ)</label><input className="cs-input" defaultValue="2.5" type="number" step="0.1" /></div>
+                {/* 多元回归专属：特征字段选择 */}
+                {regMethod === '多元回归' && (
+                  <div className="cs-form-row cs-form-row--col" style={{ marginTop: 10 }}>
+                    <label className="cs-form-label">特征字段（自变量）</label>
+                    <div className="cs-chip-group cs-chip-group--wrap">
+                      {REG_FEATURE_OPTIONS.map(f => (
+                        <button
+                          key={f}
+                          type="button"
+                          className={`cs-tool-chip cs-tool-chip--sm${regFeatures.includes(f) ? ' cs-tool-chip--active' : ''}`}
+                          onClick={() => toggleRegFeature(f)}
+                        >{f}</button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                <div className="cs-form-row" style={{ marginTop: 12 }}><label className="cs-form-label">残差阈值(σ)</label><input className="cs-input" value={residualSigma} onChange={e => setResidualSigma(e.target.value)} type="number" step="0.1" min="0" /></div>
               </div>
               <div className="cs-comp-right">
                 <div className="cs-form-section-title">对齐与处理</div>
-                <div className="cs-form-row"><label className="cs-form-label">时间/深度对齐</label><select className="cs-select"><option>最近点</option><option>线性插值</option><option>窗口聚合</option><option>严格一致</option></select></div>
-                <div className="cs-form-row"><label className="cs-form-label">归一化方式</label><select className="cs-select"><option>Z-score</option><option>Min-Max</option><option>按井归一化</option><option>不处理</option></select></div>
-                <div className="cs-form-row"><label className="cs-form-label">分析范围</label><select className="cs-select"><option>当前井</option><option>已选井</option><option>区块同类井</option></select></div>
-                <div className="cs-form-row"><label className="cs-form-label">处理对象</label><select className="cs-select"><option>主字段</option><option>辅助字段</option><option>整条记录</option></select></div>
+                <div className="cs-form-row"><label className="cs-form-label">时间/深度对齐</label><select className="cs-select" value={alignMethod} onChange={e => setAlignMethod(e.target.value)}><option>最近点</option><option>线性插值</option><option>窗口聚合</option><option>严格一致</option></select></div>
+                <div className="cs-form-row"><label className="cs-form-label">归一化方式</label><select className="cs-select" value={normMethod} onChange={e => setNormMethod(e.target.value)}><option>Z-score</option><option>Min-Max</option><option>按井归一化</option><option>不处理</option></select></div>
+                <div className="cs-form-row"><label className="cs-form-label">分析范围</label><select className="cs-select" value={analysisScope} onChange={e => setAnalysisScope(e.target.value)}><option>当前井</option><option>已选井</option><option>区块同类井</option></select></div>
+                <div className="cs-form-row"><label className="cs-form-label">处理对象</label><select className="cs-select" value={processTarget} onChange={e => setProcessTarget(e.target.value)}><option>主字段</option><option>辅助字段</option><option>整条记录</option></select></div>
                 <div className="cs-converter-hint" style={{ marginTop: 8 }}>
                   <md-icon style={{ fontSize: 14 }}>info</md-icon>
                   Pearson 适用线性关系，Spearman 适用单调关系；分组结果将展示分组条件与样本量。
                 </div>
+                {/* 预览计算结果 */}
+                {previewResult && (
+                  <div className="cs-preview-result">
+                    <div className="cs-preview-result-title"><md-icon style={{ fontSize: 15 }}>insights</md-icon>预览结果</div>
+                    <div className="cs-preview-result-grid">
+                      <div><span>有效样本</span><b>{previewResult.sample}</b></div>
+                      <div><span>相关系数</span><b className="cs-val">{previewResult.coef}</b></div>
+                      <div><span>显著性</span><b>{previewResult.p}</b></div>
+                    </div>
+                    <div className="cs-preview-result-note">{previewResult.note}</div>
+                  </div>
+                )}
               </div>
             </div>
             <div className="cs-dialog-footer">
               <button className="cs-btn cs-btn--ghost" onClick={() => setAlgoOpen(false)}>取消</button>
-              <button className="cs-btn cs-btn--ghost">预览计算</button>
+              <button className="cs-btn cs-btn--ghost" onClick={runPreview}>预览计算</button>
               <button className="cs-btn cs-btn--primary" onClick={() => setAlgoOpen(false)}>应用配置</button>
             </div>
           </div>

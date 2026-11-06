@@ -26,18 +26,8 @@ interface FieldCategory {
   fields: Field[]
 }
 
+// 数据集所选字段（不含“基本信息”）：创建数据集时选定，系统默认全部参与质检
 const FIELD_CATEGORIES: FieldCategory[] = [
-  {
-    id: 'basic',
-    name: '基本信息',
-    icon: 'info',
-    fields: [
-      { id: 'well_no', name: '井号', isKey: true },
-      { id: 'well_type', name: '井型' },
-      { id: 'block', name: '区块' },
-      { id: 'completion_date', name: '完钻日期' },
-    ],
-  },
   {
     id: 'geology',
     name: '地质参数',
@@ -77,9 +67,7 @@ const FIELD_CATEGORIES: FieldCategory[] = [
   },
 ]
 
-const KEY_FIELD_IDS = FIELD_CATEGORIES.flatMap((cat) =>
-  cat.fields.filter((f) => f.isKey).map((f) => f.id),
-)
+const TOTAL_FIELDS = FIELD_CATEGORIES.reduce((n, c) => n + c.fields.length, 0)
 
 interface FieldTreeProps {
   onFocusField?: (fieldId: string) => void
@@ -88,32 +76,12 @@ interface FieldTreeProps {
 }
 
 export function FieldTree({ onFocusField, collapsed, onToggleCollapse }: FieldTreeProps) {
-  const allFieldIds = FIELD_CATEGORIES.flatMap((c) => c.fields.map((f) => f.id))
-  const [checkedIds, setCheckedIds] = useState<Set<string>>(new Set(KEY_FIELD_IDS))
   const [expandedCats, setExpandedCats] = useState<Set<string>>(
     new Set(FIELD_CATEGORIES.map((c) => c.id)),
   )
   const [search, setSearch] = useState('')
   const [focusedId, setFocusedId] = useState<string>('gas_oil_ratio')
-
-  // 井列表
   const [wellCollapsed, setWellCollapsed] = useState(false)
-  const [selectedWells, setSelectedWells] = useState<Set<string>>(
-    new Set(WELL_LIST.map((w) => w.id)),
-  )
-
-  const toggleWell = (id: string) => {
-    setSelectedWells((prev) => {
-      const next = new Set(prev)
-      next.has(id) ? next.delete(id) : next.add(id)
-      return next
-    })
-  }
-  const selectAllWells = () => setSelectedWells(new Set(WELL_LIST.map((w) => w.id)))
-  const clearAllWells = () => setSelectedWells(new Set())
-
-  const totalFields = allFieldIds.length
-  const selectedCount = checkedIds.size
 
   const toggleCat = (catId: string) => {
     setExpandedCats((prev) => {
@@ -122,31 +90,6 @@ export function FieldTree({ onFocusField, collapsed, onToggleCollapse }: FieldTr
       return next
     })
   }
-
-  const toggleField = (fieldId: string) => {
-    setCheckedIds((prev) => {
-      const next = new Set(prev)
-      next.has(fieldId) ? next.delete(fieldId) : next.add(fieldId)
-      return next
-    })
-  }
-
-  const toggleCatAll = (cat: FieldCategory) => {
-    const catIds = cat.fields.map((f) => f.id)
-    const allChecked = catIds.every((id) => checkedIds.has(id))
-    setCheckedIds((prev) => {
-      const next = new Set(prev)
-      if (allChecked) {
-        catIds.forEach((id) => next.delete(id))
-      } else {
-        catIds.forEach((id) => next.add(id))
-      }
-      return next
-    })
-  }
-
-  const selectAll = () => setCheckedIds(new Set(allFieldIds))
-  const clearAll = () => setCheckedIds(new Set())
 
   const handleFocus = (fieldId: string) => {
     setFocusedId(fieldId)
@@ -164,19 +107,19 @@ export function FieldTree({ onFocusField, collapsed, onToggleCollapse }: FieldTr
     return (
       <aside
         className="panel-section panel-section--collapsed"
-        aria-label="字段范围（已折叠）"
+        aria-label="数据范围（已折叠）"
       >
         <div className="panel-collapsed-rail">
           <md-icon-button
-            aria-label="展开字段范围"
-            title="展开字段范围"
+            aria-label="展开数据范围"
+            title="展开数据范围"
             onClick={onToggleCollapse}
           >
             <md-icon>chevron_right</md-icon>
           </md-icon-button>
           <div className="panel-collapsed-label" aria-hidden="true">
             <md-icon>list_alt</md-icon>
-            <span className="panel-collapsed-text">字段范围</span>
+            <span className="panel-collapsed-text">数据范围</span>
           </div>
         </div>
       </aside>
@@ -184,13 +127,13 @@ export function FieldTree({ onFocusField, collapsed, onToggleCollapse }: FieldTr
   }
 
   return (
-    <aside className="panel-section field-tree-panel" aria-label="数据集字段树">
+    <aside className="panel-section field-tree-panel" aria-label="数据集数据范围">
       <div className="panel-header">
-        <span className="md-typescale-label-large panel-title">字段范围</span>
+        <span className="md-typescale-label-large panel-title">数据范围</span>
         <div className="panel-header-actions">
           <md-icon-button
-            aria-label="收起字段范围"
-            title="收起字段范围"
+            aria-label="收起数据范围"
+            title="收起数据范围"
             onClick={onToggleCollapse}
           >
             <md-icon>chevron_left</md-icon>
@@ -198,46 +141,39 @@ export function FieldTree({ onFocusField, collapsed, onToggleCollapse }: FieldTr
         </div>
       </div>
 
-      {/* 井列表 */}
+      {/* 井列表（只读） */}
       <div className="ft-well-section">
         <div
           className="ft-well-header"
           role="button"
+          tabIndex={0}
           aria-expanded={!wellCollapsed}
-          onClick={() => setWellCollapsed(v => !v)}
+          onClick={() => setWellCollapsed((v) => !v)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault()
+              setWellCollapsed((v) => !v)
+            }
+          }}
         >
           <md-icon class="ft-well-header-icon">
             {wellCollapsed ? 'chevron_right' : 'expand_more'}
           </md-icon>
           <md-icon class="ft-well-section-icon">water_drop</md-icon>
           <span className="ft-well-header-title">井列表</span>
-          <span className="ft-well-count">{selectedWells.size}/{WELL_LIST.length}</span>
+          <span className="ft-well-count">{WELL_LIST.length} 口</span>
         </div>
         {!wellCollapsed && (
           <div className="ft-well-body">
-            <div className="ft-well-actions">
-              <button className="field-tree-action-btn" onClick={selectAllWells}>全选</button>
-              <button className="field-tree-action-btn" onClick={clearAllWells}>清空</button>
-            </div>
             <ul className="ft-well-list">
-              {WELL_LIST.map((w) => {
-                const checked = selectedWells.has(w.id)
-                return (
-                  <li key={w.id} className={`ft-well-item${checked ? ' ft-well-item--checked' : ''}`}>
-                    <label className="ft-well-item-label">
-                      <input
-                        type="checkbox"
-                        className="field-tree-checkbox"
-                        checked={checked}
-                        onChange={() => toggleWell(w.id)}
-                        aria-label={`选择 ${w.name}`}
-                      />
-                      <md-icon class="ft-well-icon">oil_barrel</md-icon>
-                      <span className="ft-well-name">{w.name}</span>
-                    </label>
-                  </li>
-                )
-              })}
+              {WELL_LIST.map((w) => (
+                <li key={w.id} className="ft-well-item ft-well-item--readonly">
+                  <div className="ft-well-item-label">
+                    <md-icon class="ft-well-icon">oil_barrel</md-icon>
+                    <span className="ft-well-name">{w.name}</span>
+                  </div>
+                </li>
+              ))}
             </ul>
           </div>
         )}
@@ -245,19 +181,11 @@ export function FieldTree({ onFocusField, collapsed, onToggleCollapse }: FieldTr
 
       <div className="ft-divider" />
 
-      {/* 选中计数 */}
+      {/* 字段计数 */}
       <div className="field-tree-stat">
         <span className="md-typescale-label-small field-tree-stat-text">
-          已选 <strong>{selectedCount}</strong> / {totalFields} 个字段
+          质检字段 <strong>{TOTAL_FIELDS}</strong> 个
         </span>
-        <div className="field-tree-stat-actions">
-          <button className="field-tree-action-btn md-typescale-label-small" onClick={selectAll}>
-            全选
-          </button>
-          <button className="field-tree-action-btn md-typescale-label-small" onClick={clearAll}>
-            清空
-          </button>
-        </div>
       </div>
 
       {/* 搜索 */}
@@ -275,15 +203,10 @@ export function FieldTree({ onFocusField, collapsed, onToggleCollapse }: FieldTr
         </div>
       </div>
 
-      {/* 字段树 */}
+      {/* 字段树（只读，点击字段可定位） */}
       <div className="field-tree-body" role="tree">
         {filteredCategories.map((cat) => {
-          const catIds = cat.fields.map((f) => f.id)
-          const checkedCount = catIds.filter((id) => checkedIds.has(id)).length
-          const allChecked = checkedCount === catIds.length && catIds.length > 0
-          const someChecked = checkedCount > 0 && !allChecked
           const isExpanded = expandedCats.has(cat.id)
-
           return (
             <div
               key={cat.id}
@@ -293,56 +216,37 @@ export function FieldTree({ onFocusField, collapsed, onToggleCollapse }: FieldTr
             >
               <div className="field-tree-cat-row">
                 <button
-                  className="field-tree-expand-btn"
+                  className="field-tree-cat-toggle"
                   aria-label={isExpanded ? `收起 ${cat.name}` : `展开 ${cat.name}`}
                   onClick={() => toggleCat(cat.id)}
                 >
                   <md-icon class="field-tree-expand-icon">
                     {isExpanded ? 'expand_more' : 'chevron_right'}
                   </md-icon>
-                </button>
-                <label className="field-tree-cat-label">
-                  <input
-                    type="checkbox"
-                    className="field-tree-checkbox"
-                    checked={allChecked}
-                    ref={(el) => {
-                      if (el) el.indeterminate = someChecked
-                    }}
-                    onChange={() => toggleCatAll(cat)}
-                    aria-label={`选择 ${cat.name} 下所有字段`}
-                  />
                   <md-icon class="field-cat-icon">{cat.icon}</md-icon>
                   <span className="md-typescale-label-medium field-cat-name">{cat.name}</span>
                   <span className="md-typescale-label-small field-cat-count">
-                    {checkedCount}/{cat.fields.length}
+                    {cat.fields.length}
                   </span>
-                </label>
+                </button>
               </div>
 
               {isExpanded && (
                 <ul className="field-tree-fields" role="group">
                   {cat.fields.map((field) => {
-                    const isChecked = checkedIds.has(field.id)
                     const isFocused = focusedId === field.id
                     return (
                       <li
                         key={field.id}
                         className={`field-tree-field-row${isFocused ? ' field-tree-field-row--focused' : ''}`}
                         role="treeitem"
+                        aria-selected={isFocused}
                       >
-                        <label className="field-tree-field-label">
-                          <input
-                            type="checkbox"
-                            className="field-tree-checkbox"
-                            checked={isChecked}
-                            onChange={() => toggleField(field.id)}
-                            aria-label={`选择字段 ${field.name}`}
-                          />
-                          <span
-                            className="md-typescale-body-small field-name"
-                            onClick={() => handleFocus(field.id)}
-                          >
+                        <button
+                          className="field-tree-field-btn"
+                          onClick={() => handleFocus(field.id)}
+                        >
+                          <span className="md-typescale-body-small field-name">
                             {field.name}
                             {field.isKey && (
                               <span className="field-key-badge" aria-label="重点字段">
@@ -355,7 +259,7 @@ export function FieldTree({ onFocusField, collapsed, onToggleCollapse }: FieldTr
                               {field.unit}
                             </span>
                           )}
-                        </label>
+                        </button>
                       </li>
                     )
                   })}
