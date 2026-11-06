@@ -107,19 +107,19 @@ export function FieldTree({ onFocusField, collapsed, onToggleCollapse }: FieldTr
     return (
       <aside
         className="panel-section panel-section--collapsed"
-        aria-label="字段范围（已折叠）"
+        aria-label="数据范围（已折叠）"
       >
         <div className="panel-collapsed-rail">
           <md-icon-button
-            aria-label="展开字段范围"
-            title="展开字段范围"
+            aria-label="展开数据范围"
+            title="展开数据范围"
             onClick={onToggleCollapse}
           >
             <md-icon>chevron_right</md-icon>
           </md-icon-button>
           <div className="panel-collapsed-label" aria-hidden="true">
             <md-icon>list_alt</md-icon>
-            <span className="panel-collapsed-text">字段范围</span>
+            <span className="panel-collapsed-text">数据范围</span>
           </div>
         </div>
       </aside>
@@ -127,27 +127,18 @@ export function FieldTree({ onFocusField, collapsed, onToggleCollapse }: FieldTr
   }
 
   return (
-    <aside className="panel-section field-tree-panel" aria-label="数据集字段范围">
+    <aside className="panel-section field-tree-panel" aria-label="数据集数据范围">
       <div className="panel-header">
-        <span className="md-typescale-label-large panel-title">字段范围</span>
+        <span className="md-typescale-label-large panel-title">数据范围</span>
         <div className="panel-header-actions">
           <md-icon-button
-            aria-label="收起字段范围"
-            title="收起字段范围"
+            aria-label="收起数据范围"
+            title="收起数据范围"
             onClick={onToggleCollapse}
           >
             <md-icon>chevron_left</md-icon>
           </md-icon-button>
         </div>
-      </div>
-
-      {/* 质检范围说明 */}
-      <div className="ft-scope-note" role="note">
-        <md-icon class="ft-scope-note-icon">verified</md-icon>
-        <span>
-          系统默认对全部 <strong>{WELL_LIST.length}</strong> 口井、
-          <strong>{TOTAL_FIELDS}</strong> 个字段进行质检
-        </span>
       </div>
 
       {/* 井列表（只读） */}
