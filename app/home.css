@@ -4,7 +4,7 @@
   flex-direction: column;
   height: 100vh;
   overflow: hidden;
-  background: var(--md-sys-color-background);
+  background: linear-gradient(180deg, #e8effc 0%, #f1f5fd 40%, #eef3fb 100%);
 }
 
 /* ===== Top Nav ===== */
@@ -12,15 +12,15 @@
   display: flex;
   align-items: center;
   gap: 0;
-  height: 52px;
-  min-height: 52px;
-  padding: 0 16px;
+  height: 56px;
+  min-height: 56px;
+  padding: 0 20px;
   background: var(--app-color-brand-bar);
   color: #fff;
   position: sticky;
   top: 0;
   z-index: 100;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 2px 10px rgba(37, 82, 204, 0.25);
 }
 
 .top-nav-brand {
@@ -35,16 +35,40 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.15);
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 35%, #ffd54a 0%, #f5a623 55%, #e2552a 100%);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
   flex-shrink: 0;
 }
 
 .top-nav-logo md-icon {
   color: #fff;
-  font-size: 18px;
+  font-size: 19px;
+}
+
+/* 油田切换胶囊 */
+.top-nav-field-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 6px;
+  padding: 3px 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.75);
+  background: rgba(255, 255, 255, 0.92);
+  color: #2552cc;
+  font-size: 12.5px;
+  font-weight: 600;
+  font-family: var(--md-ref-typeface-plain);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.top-nav-field-pill md-icon {
+  font-size: 15px;
+  color: inherit;
 }
 
 .top-nav-title-group {
@@ -56,9 +80,11 @@
 
 .top-nav-platform-name {
   color: #fff;
-  font-weight: 600;
+  font-weight: 700;
   white-space: nowrap;
-  font-size: 14px;
+  font-size: 18px;
+  letter-spacing: 0.04em;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
 }
 
 .top-nav-dataset-name {
@@ -97,13 +123,15 @@
 }
 
 .top-nav-link:hover {
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.16);
   color: #fff;
 }
 
 .top-nav-link--active {
-  background: rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.24);
   color: #fff;
+  font-weight: 600;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35);
 }
 
 .top-nav-link md-icon {
@@ -137,9 +165,9 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 4px 10px 4px 4px;
-  border: none;
-  background: rgba(255, 255, 255, 0.12);
+  padding: 4px 14px 4px 5px;
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  background: rgba(255, 255, 255, 0.1);
   border-radius: 20px;
   cursor: pointer;
   color: #fff;
