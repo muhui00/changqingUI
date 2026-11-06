@@ -35,17 +35,20 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  background: radial-gradient(circle at 50% 35%, #ffd54a 0%, #f5a623 55%, #e2552a 100%);
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 1px 4px rgba(15, 40, 110, 0.25);
+  overflow: hidden;
   flex-shrink: 0;
 }
 
-.top-nav-logo md-icon {
-  color: #fff;
-  font-size: 19px;
+.top-nav-logo img {
+  width: 30px;
+  height: 30px;
+  object-fit: contain;
+  mix-blend-mode: multiply;
 }
 
 /* 油田切换胶囊 */

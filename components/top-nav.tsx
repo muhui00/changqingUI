@@ -22,8 +22,8 @@ export function TopNav({ activePage = 'overview', onNavOverview, onNavReportCent
     <header className="top-nav">
       {/* 左侧：平台标识 + 名称 */}
       <div className="top-nav-brand">
-        <div className="top-nav-logo" aria-hidden="true">
-          <md-icon>hub</md-icon>
+        <div className="top-nav-logo">
+          <img src="/images/logo.png" alt="长庆油田标志" width={30} height={30} />
         </div>
         <div className="top-nav-title-group">
           <span className="top-nav-platform-name md-typescale-title-medium">
