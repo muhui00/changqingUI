@@ -4843,6 +4843,61 @@
   flex-shrink: 0;
 }
 
+/* 字段范围：只读展示（质检范围由数据集决定，不可单独勾选） */
+.ft-scope-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 8px 10px 4px;
+  padding: 7px 10px;
+  border-radius: 8px;
+  background: var(--md-sys-color-primary-container);
+  color: var(--md-sys-color-on-primary-container);
+  font-size: 12px;
+  line-height: 1.5;
+  flex-shrink: 0;
+}
+.ft-scope-note strong { color: var(--md-sys-color-primary); }
+.ft-scope-note-icon {
+  font-size: 15px !important;
+  color: var(--md-sys-color-primary);
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.ft-well-item--readonly .ft-well-item-label { cursor: default; }
+.ft-well-item--readonly .ft-well-icon { color: var(--md-sys-color-primary); }
+
+.field-tree-cat-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+  padding: 2px 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font-family: var(--md-ref-typeface-plain);
+  text-align: left;
+  cursor: pointer;
+}
+
+.field-tree-field-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  width: 100%;
+  min-width: 0;
+  padding: 0 0 0 20px;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font-family: var(--md-ref-typeface-plain);
+  text-align: left;
+  cursor: pointer;
+}
+
 /* ================================================================
    样本管理页面 (SampleManagement)
    ================================================================ */
