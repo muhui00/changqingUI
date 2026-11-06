@@ -516,9 +516,11 @@ export function QCOverview({ onCardClick, hoveredCard, datasetId = '1', datasetM
         </section>
         <div className="qc-empty-state" role="status">
           <md-icon class="qc-empty-icon">science</md-icon>
-          <div className="md-typescale-title-small qc-empty-title">数据集初始化中，尚未质检</div>
+          <div className="md-typescale-title-small qc-empty-title">
+            {meta?.status === '待质检' ? '数据集已构建完成，待质检' : '数据集初始化中，尚未质检'}
+          </div>
           <div className="md-typescale-body-medium qc-empty-desc">
-            该数据集暂无质检数据。请点击右侧「开始质检」，系统将按一致性、完整性、分布范围、相关性四个步骤依次执行，完成后此处将展示质量分析结果。
+            该数据集暂无质检数据。请点击右侧「开始质检」，系统将对数据集全部井及全部业务字段，按一致性、完整性、分布范围、相关性四个步骤依次执行，完成后此处将展示质量分析结果。
           </div>
         </div>
       </div>
